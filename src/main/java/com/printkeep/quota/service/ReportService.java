@@ -110,7 +110,7 @@ public class ReportService {
         setBorder(dataStyle);
 
         CellStyle zebraStyle = workbook.createCellStyle();
-        zebraStyle.setFillForegroundColor(IndexedColors.grey_20_percent().getIndex());
+        zebraStyle.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
         zebraStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
         zebraStyle.setVerticalAlignment(VerticalAlignment.CENTER);
         setBorder(zebraStyle);
@@ -248,7 +248,7 @@ public class ReportService {
         setBorder(dataStyle);
 
         CellStyle zebraStyle = workbook.createCellStyle();
-        zebraStyle.setFillForegroundColor(IndexedColors.grey_20_percent().getIndex());
+        zebraStyle.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
         zebraStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
         zebraStyle.setVerticalAlignment(VerticalAlignment.CENTER);
         setBorder(zebraStyle);
