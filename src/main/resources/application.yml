@@ -1,0 +1,51 @@
+server:
+  port: 443
+  ssl:
+    key-store: classpath:keystore.p12
+    key-store-password: changeit
+    key-store-type: PKCS12
+    key-alias: printkeep
+    enabled: true
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/printquota
+    username: printuser
+    password: printpassword
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  ldap:
+    urls: ldaps://ad.company.local:636
+    base: DC=company,DC=local
+    username: CN=PrintServiceUser,OU=ServiceAccounts,DC=company,DC=local
+    password: ServiceUserPassword
+    properties:
+      java.naming.referral: follow
+  mail:
+    host: smtp.company.local
+    port: 587
+    username: reports@company.local
+    password: SMTPPassword
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+print-quota:
+  default-quota: 106
+  printer-forward-type: IPP # Can be IPP or RAW
+  physical-printer-url: http://192.168.1.50/ipp/print # Required if printer-forward-type is IPP
+  physical-printer-raw-host: 192.168.1.50             # Required if printer-forward-type is RAW
+  physical-printer-raw-port: 9100                     # Required if printer-forward-type is RAW
+  admin-emails:
+    - it-admin@company.local
+    - it-head@company.local
+  report-cron: "0 0 0 1 * ?"
