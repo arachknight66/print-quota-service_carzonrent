@@ -41,7 +41,7 @@ pipeline {
                     sh "scp target/print-quota-service-1.0.0.jar ${TARGET_VM}:${APP_DIR}/print-quota-service.jar"
                     
                     // Copy systemd service file
-                    sh "scp deployment/print-quota-service.service ${TARGET_VM}:/tmp/print-quota.service"
+                    sh "scp deployment/print-quota.service ${TARGET_VM}:/tmp/print-quota.service"
                     sh "ssh ${TARGET_VM} 'sudo mv /tmp/print-quota.service /etc/systemd/system/print-quota.service && sudo systemctl daemon-reload'"
                     
                     // Restart service
