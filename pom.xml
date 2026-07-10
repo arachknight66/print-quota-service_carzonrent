@@ -63,7 +63,8 @@
 
         <!-- PostgreSQL Database Driver -->
         <dependency>
-            <groupId>org.postgresql:postgresql</groupId>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
         </dependency>
 
