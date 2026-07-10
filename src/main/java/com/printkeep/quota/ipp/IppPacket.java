@@ -159,7 +159,11 @@ public class IppPacket {
         public int read(byte[] b, int off, int len) throws IOException {
             int numRead = in.read(b, off, len);
             if (numRead > 0) {
+<<<<<<< HEAD
                 buf.write(b, 0, numRead);
+=======
+                buf.write(b, off, numRead);
+>>>>>>> caec988 (feat: implement IPP stream parser with recording proxy and add project phase documentation reports)
             }
             return numRead;
         }
