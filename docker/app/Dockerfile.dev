@@ -1,0 +1,16 @@
+FROM eclipse-temurin:21-jdk
+
+WORKDIR /app
+
+# Install standard utilities for dev profiling
+RUN apt-get update && apt-get install -y curl procps && rm -rf /var/lib/apt/lists/*
+
+# Expose debugging ports
+EXPOSE 8080 5005
+
+# Use dev profile and configure remote JVM debugging by default
+ENV JAVA_OPTS="-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
+ENV SPRING_PROFILES_ACTIVE=dev
+
+# Run using the app jar (which is volume mounted in development compose)
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar target/print-quota-core-1.0.0.jar"]

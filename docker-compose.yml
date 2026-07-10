@@ -5,29 +5,118 @@ services:
     image: postgres:16-alpine
     container_name: print-quota-db
     environment:
-      POSTGRES_DB: printquota
-      POSTGRES_USER: printuser
-      POSTGRES_PASSWORD: printpassword
+      POSTGRES_DB: ${DB_NAME:-printquota}
+      POSTGRES_USER: ${DB_USERNAME:-printuser}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-printpassword}
     ports:
       - "5432:5432"
     volumes:
-      - ./.postgres:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - printquota-net
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U printuser -d printquota"]
-      interval: 10s
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
       timeout: 5s
       retries: 5
     restart: unless-stopped
 
   pgadmin:
-    image: dpage/pgadmin4:8
+    image: dpage/pgadmin4:8.8
     container_name: print-quota-pgadmin
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@company.local
-      PGADMIN_DEFAULT_PASSWORD: adminpassword
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@company.local}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+      PGADMIN_CONFIG_ENHANCED_COOKIE_PROTECTION: "True"
     ports:
       - "5050:80"
+    networks:
+      - printquota-net
     depends_on:
       postgres:
         condition: service_healthy
     restart: unless-stopped
+
+  ldap:
+    image: osixia/openldap:1.5.0
+    container_name: print-quota-ldap
+    environment:
+      LDAP_ORGANISATION: "Company"
+      LDAP_DOMAIN: "company.local"
+      LDAP_ADMIN_PASSWORD: "admin"
+    ports:
+      - "389:389"
+      - "636:636"
+    volumes:
+      - ./docker/ldap/bootstrap.ldif:/container/service/slapd/assets/config/bootstrap.ldif:ro
+    networks:
+      - printquota-net
+    healthcheck:
+      test: ["CMD", "ldapsearch", "-x", "-H", "ldap://localhost:389", "-b", "dc=company,dc=local", "-s", "base"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  print-quota-app:
+    build:
+      context: .
+      dockerfile: docker/app/Dockerfile
+    container_name: print-quota-service
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${DB_NAME:-printquota}
+      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME:-printuser}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-printpassword}
+      LDAP_URL: ldap://ldap:389
+      LDAP_BASE_DN: dc=company,dc=local
+      LDAP_BIND_DN: cn=admin,dc=company,dc=local
+      LDAP_BIND_PASSWORD: admin
+      LDAP_SEARCH_BASE: ou=users
+      LDAP_SYNC_ENABLED: "false"
+    volumes:
+      - app_logs:/app/logs
+      - app_reports:/app/reports
+      - app_spool:/app/spool
+      - app_certs:/app/certs:ro
+    networks:
+      - printquota-net
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    user: "10001:10001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ldap:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Future proxy and integration placeholders
+  printer-proxy:
+    image: alpine:3.19
+    container_name: print-quota-printer-proxy
+    command: ["tail", "-f", "/dev/null"]
+    networks:
+      - printquota-net
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    name: printquota_postgres_data
+  app_logs:
+    name: printquota_app_logs
+  app_reports:
+    name: printquota_app_reports
+  app_spool:
+    name: printquota_app_spool
+  app_certs:
+    name: printquota_app_certs
+
+networks:
+  printquota-net:
+    name: printquota-net
+    driver: bridge

@@ -13,6 +13,11 @@ spring:
   liquibase:
     enabled: true
     change-log: classpath:db/changelog/db.changelog-master.yaml
+  cache:
+    type: caffeine
+    cache-names: ldapUsers
+    caffeine:
+      spec: maximumSize=500,expireAfterWrite=300s
 
 server:
   port: 8080
@@ -31,7 +36,14 @@ management:
     health:
       probes:
         enabled: true
-      show-details: when_authorized
+      show-details: always
+      group:
+        liveness:
+          include: livenessState
+        readiness:
+          include: readinessState,db,ldap
+        startup:
+          include: db,liquibase
 
 info:
   app:
@@ -61,9 +73,3 @@ app:
       enabled: ${LDAP_SYNC_ENABLED:false}
       cron: ${LDAP_SYNC_CRON:0 0 * * * *}
 
-spring:
-  cache:
-    type: caffeine
-    cache-names: ldapUsers
-    caffeine:
-      spec: maximumSize=500,expireAfterWrite=300s

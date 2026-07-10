@@ -127,10 +127,12 @@
 
     <build>
         <plugins>
-            <!-- Spring Boot plugin to package the executable JAR -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <mainClass>com.printkeep.quota.core.PrintQuotaApplication</mainClass>
+                </configuration>
                 <executions>
                     <execution>
                         <goals>
