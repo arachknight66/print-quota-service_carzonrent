@@ -9,12 +9,12 @@ import org.springframework.boot.web.embedded.jetty.JettyServletWebServerFactory;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.test.context.ActiveProfiles;
 
+import com.printkeep.quota.core.AbstractIntegrationTest;
+
 /**
  * Unit tests to verify that the custom WebServerConfig loads properly.
  */
-@SpringBootTest
-@ActiveProfiles("dev")
-class WebServerConfigTests {
+class WebServerConfigTests extends AbstractIntegrationTest {
 
     @Autowired
     @org.springframework.beans.factory.annotation.Qualifier("jettyWebServerFactoryCustomizer")

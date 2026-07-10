@@ -7,9 +7,7 @@ import org.springframework.test.context.ActiveProfiles;
 /**
  * Basic application tests to verify Spring context loads successfully.
  */
-@SpringBootTest
-@ActiveProfiles("dev")
-class PrintQuotaApplicationTests {
+class PrintQuotaApplicationTests extends AbstractIntegrationTest {
 
     /**
      * Verifies that the Spring Boot context initializes without errors.
