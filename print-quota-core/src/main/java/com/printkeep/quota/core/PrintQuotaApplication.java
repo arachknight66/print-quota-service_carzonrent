@@ -2,12 +2,14 @@ package com.printkeep.quota.core;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
  * Main bootstrapper class for the Print Quota Management System.
  * This class initializes the Spring application context, web server, and configuration layers.
  */
 @SpringBootApplication
+@EnableScheduling
 public class PrintQuotaApplication {
 
     /**

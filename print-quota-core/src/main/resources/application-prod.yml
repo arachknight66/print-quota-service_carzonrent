@@ -31,3 +31,19 @@ logging:
   level:
     com.printkeep.quota: INFO
     org.springframework.web: WARN
+    org.springframework.ldap: WARN
+
+# Production LDAP overrides
+app:
+  ldap:
+    urls:
+      - ${LDAP_URL:ldaps://dc01.company.local:636}
+    ssl-enabled: true
+    connection-timeout: 3000
+    read-timeout: 3000
+    pool:
+      min-idle: 4
+      max-active: 16
+    sync:
+      enabled: ${LDAP_SYNC_ENABLED:true}
+      cron: ${LDAP_SYNC_CRON:0 */15 * * * *}

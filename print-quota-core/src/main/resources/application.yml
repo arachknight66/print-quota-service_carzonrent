@@ -38,3 +38,32 @@ info:
     name: print-quota-service
     version: 1.0.0
     description: Print Quota Management System Middleware
+
+# LDAP Active Directory Configuration (overridden by profile or env vars)
+app:
+  ldap:
+    urls:
+      - ${LDAP_URL:ldap://localhost:389}
+    base-dn: ${LDAP_BASE_DN:dc=company,dc=local}
+    username: ${LDAP_BIND_DN:cn=admin,dc=company,dc=local}
+    password: ${LDAP_BIND_PASSWORD:admin}
+    search-base: ${LDAP_SEARCH_BASE:ou=users}
+    connection-timeout: ${LDAP_CONNECT_TIMEOUT:5000}
+    read-timeout: ${LDAP_READ_TIMEOUT:5000}
+    ssl-enabled: ${LDAP_SSL_ENABLED:false}
+    referral: ignore
+    domain-prefix: ${LDAP_DOMAIN_PREFIX:company\\}
+    pool:
+      min-idle: 2
+      max-active: 8
+      validation-on-borrow: true
+    sync:
+      enabled: ${LDAP_SYNC_ENABLED:false}
+      cron: ${LDAP_SYNC_CRON:0 0 * * * *}
+
+spring:
+  cache:
+    type: caffeine
+    cache-names: ldapUsers
+    caffeine:
+      spec: maximumSize=500,expireAfterWrite=300s

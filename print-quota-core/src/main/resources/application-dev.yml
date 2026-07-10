@@ -17,3 +17,5 @@ logging:
   level:
     com.printkeep.quota: DEBUG
     org.springframework.web: INFO
+    org.springframework.ldap: DEBUG
+    com.printkeep.quota.core.identity: DEBUG
