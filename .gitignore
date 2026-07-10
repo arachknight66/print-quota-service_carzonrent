@@ -1,0 +1,18 @@
+# Maven build directory
+target/
+
+# Local maven downloader cache
+.maven/
+
+# Temp files
+*.tmp
+*.log
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
