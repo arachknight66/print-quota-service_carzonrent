@@ -28,15 +28,19 @@ This document outlines the current project maturity, completed phases, identifie
 - Built Chain of Responsibility evaluation stages.
 - Implemented transactional quota deductions and metrics logging.
 
+### Phase 6: Print Job Routing & Proxy
+- Implemented HTTP/HTTPS transparent IPP proxy interceptor.
+- Built configuration-driven printer routing map with failover rules.
+- Streams multi-format documents (PDF, PCL, PS) in constant 8KB buffer memory space to prevent OOM errors.
+- Integrates with the validation pipeline and returns RFC 8011 status codes (e.g., 0x0401) on rejections.
+
 ---
 
-## 2. Next Milestones & Phase 6 Blueprint
+## 2. Next Milestones
 
-### Phase 6: Print Job Routing & Proxy (Planned)
-- Implement a spooler interceptor proxy.
-- Allow the application to forward jobs to the physical printers:
-  - If a print job is **Accepted (ALLOW)**, decode the destination URI, build the IPP output packet, and route it to the target printer over standard print channels.
-  - If **Rejected (REJECT)**, cancel the job, delete print spooler files, and send an IPP status failure packet back to the client.
+### Phase 7: Clustering & Distributed Lock Management (Planned)
+- Implement Hazelcast or Redis distributed locking to coordinate multiple proxy nodes.
+- Introduce centralized rate-limiting for proxy traffic.
 
 ---
 

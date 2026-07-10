@@ -25,7 +25,7 @@ public class WebServerConfig {
      * @return a customizer for the JettyServletWebServerFactory
      */
     @Bean
-    public WebServerFactoryCustomizer<JettyServletWebServerFactory> jettyWebServerFactoryCustomizer() {
+    public WebServerFactoryCustomizer<JettyServletWebServerFactory> customJettyWebServerFactoryCustomizer() {
         return factory -> factory.addServerCustomizers((JettyServerCustomizer) server -> {
             if (server.getThreadPool() instanceof QueuedThreadPool threadPool) {
                 threadPool.setMinThreads(MIN_THREADS);

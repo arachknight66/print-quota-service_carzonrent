@@ -13,7 +13,7 @@ This repository contains the complete implementation of Phases 1 to 5. Phase 6 (
 - **Phase 3: Identity Integration** — Completed. Spring LDAP connection to Active Directory, batch synchronization, and caching.
 - **Phase 4: Docker Runtime & IPP Codec** — Completed. Multi-stage CentOS Stream 9 containerization and low-level IPP (RFC 8010/8011) codec.
 - **Phase 5: Print Processing Engine** — Completed. Chain of Responsibility validation, quota deduction under pessimistic locks, and transactional audits.
-- **Phase 6: Print Job Routing & Proxy** — **Planned / Future Work**.
+- **Phase 6: Print Job Routing & Proxy** — Completed. Transformed system into a fully transparent streaming IPP proxy.
 
 ---
 
@@ -36,6 +36,7 @@ print-quota-parent/ (Root)
     │   ├── identity/        (LDAP directory synchronization and caching service)
     │   ├── model/           (User, Quota, PrintLog JPA entities)
     │   ├── processing/      (PrintProcessingPipeline & quota deduction engine)
+    │   ├── proxy/           (Phase 6 IPP Proxy controller, client, routing, and streams)
     │   └── repository/      (JPA PostgreSQL repositories)
     └── src/main/resources/
         ├── db/changelog/    (Liquibase database schema migration files)
@@ -107,3 +108,6 @@ Detailed architectural mappings and system administration operations guides are 
 9. [Testing Matrix](testing.md) — Coverage specs, Testcontainers PostgreSQL setups, LDAP mocks.
 10. [Operations Guide](operations.md) — Maintenance procedures, logs locations, monitoring counters, backup strategies.
 11. [Project Roadmap](ROADMAP.md) — Completed milestones, Phase 6 goals, architectural debt mapping.
+12. [IPP Proxy Architecture](proxy.md) — HTTP proxy endpoints, client connections, and status response generation.
+13. [Printer Routing Engine](printer-routing.md) — Configuration driven printer resolution and routing maps.
+14. [Memory-Constrained Streaming](streaming.md) — Stream partitioners, sequence reassembly, and backpressure.
