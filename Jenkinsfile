@@ -18,15 +18,10 @@ pipeline {
             }
         }
 
-        stage('Build') {
+        stage('Build & Verify') {
             steps {
-                sh 'mvn clean package -DskipTests'
-            }
-        }
-
-        stage('Test') {
-            steps {
-                sh 'mvn test'
+                // Runs compilation, tests, checkstyle, PMD, SpotBugs, and JaCoCo coverage
+                sh 'mvn clean verify'
             }
         }
 
@@ -37,8 +32,8 @@ pipeline {
                     // Create app directory if not exists
                     sh "ssh ${TARGET_VM} 'sudo mkdir -p ${APP_DIR} && sudo chown -R centos-user:centos-user ${APP_DIR}'"
                     
-                    // Copy executable jar
-                    sh "scp target/print-quota-service-1.0.0.jar ${TARGET_VM}:${APP_DIR}/print-quota-service.jar"
+                    // Copy executable jar from print-quota-core module
+                    sh "scp print-quota-core/target/print-quota-core-1.0.0.jar ${TARGET_VM}:${APP_DIR}/print-quota-service.jar"
                     
                     // Copy systemd service file
                     sh "scp deployment/print-quota.service ${TARGET_VM}:/tmp/print-quota.service"
@@ -53,7 +48,7 @@ pipeline {
     
     post {
         success {
-            echo "Print Quota Management System deployed successfully."
+            echo "Print Quota Management System build and verification completed successfully."
         }
         failure {
             echo "Pipeline failed. Check build logs."

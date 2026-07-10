@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: print-quota-db
+    environment:
+      POSTGRES_DB: printquota
+      POSTGRES_USER: printuser
+      POSTGRES_PASSWORD: printpassword
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./.postgres:/var/lib/postgresql/data
+    restart: unless-stopped
