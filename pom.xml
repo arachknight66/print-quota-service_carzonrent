@@ -79,8 +79,7 @@
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>${maven-compiler-plugin.version}</version>
                     <configuration>
-                        <source>${java.version}</source>
-                        <target>${java.version}</target>
+                        <release>${java.version}</release>
                         <compilerArgs>
                             <arg>-Xlint:all</arg>
                             <arg>-Werror</arg>
@@ -179,6 +178,13 @@
                     <groupId>org.jacoco</groupId>
                     <artifactId>jacoco-maven-plugin</artifactId>
                     <version>${jacoco-maven-plugin.version}</version>
+                    <configuration>
+                        <excludes>
+                            <exclude>com/printkeep/quota/core/PrintQuotaApplication.class</exclude>
+                            <exclude>com/printkeep/quota/core/config/WebServerConfig.class</exclude>
+                            <exclude>com/printkeep/quota/core/model/ErrorResponse.class</exclude>
+                        </excludes>
+                    </configuration>
                     <executions>
                         <execution>
                             <id>prepare-agent</id>

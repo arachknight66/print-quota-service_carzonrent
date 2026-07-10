@@ -1,0 +1,13 @@
+server:
+  port: ${SERVER_PORT:443}
+  ssl:
+    key-store: ${KEYSTORE_PATH:classpath:keystore.p12}
+    key-store-password: ${KEYSTORE_PASSWORD}
+    key-store-type: ${KEYSTORE_TYPE:PKCS12}
+    key-alias: ${KEY_ALIAS:printkeep}
+    enabled: ${SSL_ENABLED:true}
+
+logging:
+  level:
+    com.printkeep.quota: INFO
+    org.springframework.web: WARN

@@ -1,0 +1,7 @@
+server:
+  port: 8080
+
+logging:
+  level:
+    com.printkeep.quota: DEBUG
+    org.springframework.web: INFO
