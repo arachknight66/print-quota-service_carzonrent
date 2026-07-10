@@ -1,0 +1,220 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-init-schema
+      author: arach
+      changes:
+        - createTable:
+            tableName: users
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: domain_username
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: department
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: is_active
+                  type: boolean
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_by
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_by
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: deleted
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+
+        - createTable:
+            tableName: quotas
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_quotas_user
+                    referencedTableName: users
+                    referencedColumnNames: id
+              - column:
+                  name: month
+                  type: varchar(7)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: allocated_pages
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: used_pages
+                  type: int
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_by
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_by
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+
+        - addUniqueConstraint:
+            tableName: quotas
+            columnNames: user_id, month
+            constraintName: uk_quotas_user_month
+
+        - sql:
+            dbms: postgresql
+            sql: "ALTER TABLE quotas ADD CONSTRAINT chk_quotas_allocated_pages CHECK (allocated_pages >= 0);"
+        - sql:
+            dbms: postgresql
+            sql: "ALTER TABLE quotas ADD CONSTRAINT chk_quotas_used_pages CHECK (used_pages >= 0);"
+        - sql:
+            dbms: postgresql
+            sql: "ALTER TABLE quotas ADD CONSTRAINT chk_quotas_used_allocated CHECK (used_pages <= allocated_pages);"
+
+        - createTable:
+            tableName: print_logs
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_print_logs_user
+                    referencedTableName: users
+                    referencedColumnNames: id
+              - column:
+                  name: timestamp
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+              - column:
+                  name: document_name
+                  type: varchar(512)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: printer_name
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: page_count
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(30)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: error_message
+                  type: varchar(2048)
+              - column:
+                  name: correlation_id
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_by
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_by
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+
+        - sql:
+            dbms: postgresql
+            sql: "ALTER TABLE print_logs ADD CONSTRAINT chk_print_logs_page_count CHECK (page_count > 0);"
+
+        - createIndex:
+            tableName: print_logs
+            indexName: idx_print_logs_user_id
+            columns:
+              - column:
+                  name: user_id
+        - createIndex:
+            tableName: print_logs
+            indexName: idx_print_logs_timestamp
+            columns:
+              - column:
+                  name: timestamp

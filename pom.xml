@@ -22,6 +22,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <spring-boot.version>3.3.0</spring-boot.version>
+        <lombok.version>1.18.32</lombok.version>
         
         <!-- Maven Plugins -->
         <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
@@ -86,6 +87,13 @@
                             <arg>-Xlint:-processing</arg> <!-- ignore annotation processing warnings -->
                         </compilerArgs>
                         <showWarnings>true</showWarnings>
+                        <annotationProcessorPaths>
+                            <path>
+                                <groupId>org.projectlombok</groupId>
+                                <artifactId>lombok</artifactId>
+                                <version>${lombok.version}</version>
+                            </path>
+                        </annotationProcessorPaths>
                     </configuration>
                 </plugin>
 
