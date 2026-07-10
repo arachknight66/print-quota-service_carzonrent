@@ -31,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.*;
     "spring.datasource.url=jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1",
     "spring.datasource.driver-class-name=org.h2.Driver",
     "spring.jpa.hibernate.ddl-auto=create-drop",
+    "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect",
     "server.ssl.enabled=false", // Disable SSL for standard web context tests
     "print-quota.default-quota=106",
     "print-quota.printer-forward-type=RAW",
