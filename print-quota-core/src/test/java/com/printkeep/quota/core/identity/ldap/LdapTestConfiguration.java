@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.ldap.core.LdapTemplate;
 import org.springframework.ldap.core.support.LdapContextSource;
+import com.printkeep.quota.core.identity.ldap.config.LdapProperties;
 
 import javax.naming.directory.DirContext;
 
@@ -36,7 +37,7 @@ public class LdapTestConfiguration {
      * @throws LDAPException if the server cannot be created or started
      */
     @Bean
-    public InMemoryDirectoryServer inMemoryDirectoryServer() throws LDAPException {
+    public InMemoryDirectoryServer inMemoryDirectoryServer() throws Exception {
         InMemoryDirectoryServerConfig config = new InMemoryDirectoryServerConfig(BASE_DN);
         config.addAdditionalBindCredentials(ADMIN_DN, ADMIN_PASSWORD);
         config.setListenerConfigs(InMemoryListenerConfig.createLDAPConfig("default", 0));
@@ -79,7 +80,7 @@ public class LdapTestConfiguration {
     @Primary
     public LdapContextSource ldapContextSource(LdapProperties ldapProperties) {
         LdapContextSource contextSource = new LdapContextSource();
-        contextSource.setUrls(ldapProperties.getUrls());
+        contextSource.setUrls(ldapProperties.getUrls().toArray(new String[0]));
         contextSource.setBase(ldapProperties.getBaseDn());
         contextSource.setUserDn(ldapProperties.getUsername());
         contextSource.setPassword(ldapProperties.getPassword());
@@ -126,7 +127,7 @@ public class LdapTestConfiguration {
     // Directory population helpers
     // -------------------------------------------------------------------------
 
-    private void populateDirectory() throws LDAPException {
+    private void populateDirectory() throws Exception {
         // Create base DN entry
         directoryServer.add(
                 "dn: " + BASE_DN,

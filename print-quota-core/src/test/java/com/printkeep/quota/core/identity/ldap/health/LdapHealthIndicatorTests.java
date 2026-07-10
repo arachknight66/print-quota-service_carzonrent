@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 import com.printkeep.quota.core.identity.ldap.config.LdapProperties;
@@ -23,6 +24,7 @@ import org.springframework.ldap.core.LdapTemplate;
  * Unit tests for LdapHealthIndicator.
  */
 @ExtendWith(MockitoExtension.class)
+@SuppressWarnings("unchecked")
 class LdapHealthIndicatorTests {
 
     @Mock
@@ -35,8 +37,8 @@ class LdapHealthIndicatorTests {
 
     @BeforeEach
     void setUp() {
-        when(properties.getSearchBase()).thenReturn("ou=users");
-        when(properties.getUrls()).thenReturn(List.of("ldap://localhost:389"));
+        lenient().when(properties.getSearchBase()).thenReturn("ou=users");
+        lenient().when(properties.getUrls()).thenReturn(List.of("ldap://localhost:389"));
         healthIndicator = new LdapHealthIndicator(ldapTemplate, properties);
     }
 
@@ -53,7 +55,7 @@ class LdapHealthIndicatorTests {
     @Test
     void testHealthDown() {
         when(ldapTemplate.search(anyString(), anyString(), anyInt(), any(AttributesMapper.class)))
-                .thenThrow(new CommunicationException(new RuntimeException("Connection refused")));
+                .thenThrow(new CommunicationException(new javax.naming.CommunicationException("Connection refused")));
 
         final Health health = healthIndicator.health();
         assertThat(health.getStatus()).isEqualTo(Status.DOWN);

@@ -27,7 +27,7 @@ public class IdentitySyncScheduler {
      * Periodically triggers batch synchronization based on the configured cron schedule.
      * Only runs if scheduled sync is enabled in configuration properties.
      */
-    @Scheduled(cron = "#{@ldapProperties.sync.cron}")
+    @Scheduled(cron = "${app.ldap.sync.cron:0 0 * * * *}")
     public void scheduledSync() {
         if (!ldapProperties.getSync().isEnabled()) {
             LOGGER.debug("Scheduled Active Directory synchronization is disabled by configuration.");

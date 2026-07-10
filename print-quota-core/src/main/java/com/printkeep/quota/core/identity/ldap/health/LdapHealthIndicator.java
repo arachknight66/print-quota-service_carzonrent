@@ -33,7 +33,7 @@ public class LdapHealthIndicator implements HealthIndicator {
                     properties.getSearchBase(),
                     "(objectClass=*)",
                     1,
-                    attrs -> null
+                    (org.springframework.ldap.core.AttributesMapper<Object>) attrs -> null
             );
 
             final long responseTimeMs = Duration.between(start, Instant.now()).toMillis();

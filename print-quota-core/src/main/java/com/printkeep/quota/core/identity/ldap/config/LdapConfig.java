@@ -58,11 +58,14 @@ public class LdapConfig {
      */
     @Bean
     public ContextSource contextSource(final LdapContextSource ldapContextSource, final LdapProperties properties) {
-        final PooledContextSource pooledContextSource = new PooledContextSource(new DefaultDirContextValidator());
+        final org.springframework.ldap.pool2.factory.PoolConfig poolConfig = new org.springframework.ldap.pool2.factory.PoolConfig();
+        poolConfig.setMinIdlePerKey(properties.getPool().getMinIdle());
+        poolConfig.setMaxTotal(properties.getPool().getMaxActive());
+        poolConfig.setTestOnBorrow(properties.getPool().isValidationOnBorrow());
+
+        final PooledContextSource pooledContextSource = new PooledContextSource(poolConfig);
         pooledContextSource.setContextSource(ldapContextSource);
-        pooledContextSource.setMinIdle(properties.getPool().getMinIdle());
-        pooledContextSource.setMaxActive(properties.getPool().getMaxActive());
-        pooledContextSource.setTestOnBorrow(properties.getPool().isValidationOnBorrow());
+        pooledContextSource.setDirContextValidator(new DefaultDirContextValidator());
         return pooledContextSource;
     }
 
