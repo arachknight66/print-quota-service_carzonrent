@@ -10,10 +10,11 @@ import com.printkeep.quota.service.LdapService;
 import com.printkeep.quota.service.PrintQuotaService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.ActiveProfiles;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -50,7 +51,21 @@ public class PrintQuotaStressTests {
     @Autowired
     private PrintLogRepository printLogRepository;
 
-    @MockBean
+    @TestConfiguration
+    static class TestConfig {
+        @Bean
+        @Primary
+        public LdapService ldapService() {
+            return new LdapService() {
+                @Override
+                public String getUserDepartment(String username) {
+                    return "Default";
+                }
+            };
+        }
+    }
+
+    @Autowired
     private LdapService ldapService;
 
     @BeforeEach

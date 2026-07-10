@@ -11,10 +11,11 @@ import com.printkeep.quota.service.LdapService;
 import com.printkeep.quota.service.PrintQuotaService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.ActiveProfiles;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -53,7 +54,24 @@ public class PrintQuotaApplicationTests {
     @Autowired
     private PrintLogRepository printLogRepository;
 
-    @MockBean
+    @TestConfiguration
+    static class TestConfig {
+        @Bean
+        @Primary
+        public LdapService ldapService() {
+            return new LdapService() {
+                @Override
+                public String getUserDepartment(String username) {
+                    if ("new.employee".equals(username)) {
+                        return "Marketing";
+                    }
+                    return "Default";
+                }
+            };
+        }
+    }
+
+    @Autowired
     private LdapService ldapService;
 
     @BeforeEach
@@ -156,9 +174,6 @@ public class PrintQuotaApplicationTests {
 
     @Test
     public void testLdapAutoProvisioning() {
-        // Mock LDAP department lookup
-        Mockito.when(ldapService.getUserDepartment("new.employee")).thenReturn("Marketing");
-
         // Verify user does not exist
         assertFalse(userRepository.findByDomainUsername("new.employee").isPresent());
 
