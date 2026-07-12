@@ -19,4 +19,17 @@ public interface UserRepository extends JpaRepository<User, UUID> {
      * @return an Optional containing the found user, or empty.
      */
     Optional<User> findByDomainUsername(String domainUsername);
+
+    long countByIsActive(boolean isActive);
+
+    /**
+     * Search users by dynamic filtering with pagination.
+     */
+    @org.springframework.data.jpa.repository.Query("SELECT u FROM User u WHERE "
+            + "(:username IS NULL OR LOWER(u.domainUsername) LIKE LOWER(CONCAT('%', :username, '%'))) AND "
+            + "(:department IS NULL OR LOWER(u.department) LIKE LOWER(CONCAT('%', :department, '%')))")
+    org.springframework.data.domain.Page<User> searchUsers(
+            @org.springframework.data.repository.query.Param("username") String username,
+            @org.springframework.data.repository.query.Param("department") String department,
+            org.springframework.data.domain.Pageable pageable);
 }

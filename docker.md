@@ -46,8 +46,6 @@ Central container coordination is handled via `docker-compose.yml` in the root d
 4. **`print-quota-app`** (Built via `./docker/app/Dockerfile`):
    - Core Spring Boot service running on port `8080`.
    - Starts only after both `postgres` and `ldap` report healthy.
-5. **`printer-proxy`** (Image: `alpine:3.19`):
-   - Future print forwarding routing placeholder (Phase 6).
 
 ---
 

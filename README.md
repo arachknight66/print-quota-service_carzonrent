@@ -14,6 +14,7 @@ This repository contains the complete implementation of Phases 1 to 5. Phase 6 (
 - **Phase 4: Docker Runtime & IPP Codec** — Completed. Multi-stage CentOS Stream 9 containerization and low-level IPP (RFC 8010/8011) codec.
 - **Phase 5: Print Processing Engine** — Completed. Chain of Responsibility validation, quota deduction under pessimistic locks, and transactional audits.
 - **Phase 6: Print Job Routing & Proxy** — Completed. Transformed system into a fully transparent streaming IPP proxy.
+- **Phase 7: Reporting, Dashboard & Administration** — Completed. Integrated operational BI dashboards, SMTP alerts, and Apache POI Excel/CSV exports.
 
 ---
 
@@ -30,6 +31,7 @@ print-quota-parent/ (Root)
 ├── ipp-codec/               (Low-level binary IPP parser/encoder library module)
 └── print-quota-core/        (Main Spring Boot middleware core module)
     ├── src/main/java/com/printkeep/quota/core/
+    │   ├── admin/           (Phase 7 admin search controllers, dashboard, and mail services)
     │   ├── config/          (Thread-pools, Cache, Actuator, and JSON Logger settings)
     │   ├── controller/      (Actuator REST endpoints and Exception handlers)
     │   ├── filter/          (MdcCorrelationFilter tracing HTTP requests)
@@ -51,6 +53,7 @@ print-quota-parent/ (Root)
 - **Database**: PostgreSQL 16
 - **Migrations**: Liquibase
 - **Directory Services**: Active Directory / Spring LDAP
+- **Reporting**: Apache POI (Excel) / OpenPDF (PDF)
 - **Logging**: Logback with MDC Correlation trace binding
 - **Metrics**: Micrometer / Actuator / Prometheus
 - **Containerization**: Docker / Docker Compose (CentOS Stream 9 base)
@@ -111,3 +114,14 @@ Detailed architectural mappings and system administration operations guides are 
 12. [IPP Proxy Architecture](proxy.md) — HTTP proxy endpoints, client connections, and status response generation.
 13. [Printer Routing Engine](printer-routing.md) — Configuration driven printer resolution and routing maps.
 14. [Memory-Constrained Streaming](streaming.md) — Stream partitioners, sequence reassembly, and backpressure.
+15. [Enterprise Reporting Blueprint](reporting.md) — SXSSFWorkbook streaming Excel sheets, logs, and monthly reset crons.
+16. [Dashboard Analytics Engine](dashboard.md) — Counts, sums, averages, and group-by stats REST API.
+17. [Administrative Portal](administration.md) — Quota adjustments, resets, email alerts, and sync controls.
+18. [Production Hardening Guide](production-hardening.md) — Pool limits, CentOS kernel drops, and JVM garbage collector parameters.
+19. [Release Checklist](release-checklist.md) — SBOM artifacts, PMD/SpotBugs static verification, and build gates.
+20. [Deployment Validation](deployment-validation.md) — Actuator health checks, curl command validations, and Postgres restart triages.
+21. [Performance Tuning](performance.md) — SXSSFWorkbook memory benchmarks, indexing models, and buffer limits.
+22. [Backup & Recovery](backup-recovery.md) — PowerShell dump utilities, certificates migration, and RPO/RTO goals.
+23. [Operations Runbook](operations-runbook.md) — Structured JSON logging formats, Prometheus alert levels, and crons lists.
+24. [Incident Response Manual](incident-response.md) — Triage steps for network resets, LDAP database sync errors, and lock timeouts.
+25. [Security Audit Report](security-audit.md) — OWASP check matrices, HTTP security headers, and read-only container rules.

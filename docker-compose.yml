@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   postgres:
     image: postgres:16-alpine
@@ -93,15 +91,6 @@ services:
         condition: service_healthy
       ldap:
         condition: service_healthy
-    restart: unless-stopped
-
-  # Future proxy and integration placeholders
-  printer-proxy:
-    image: alpine:3.19
-    container_name: print-quota-printer-proxy
-    command: ["tail", "-f", "/dev/null"]
-    networks:
-      - printquota-net
     restart: unless-stopped
 
 volumes:

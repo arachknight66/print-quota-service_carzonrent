@@ -9,7 +9,7 @@ COPY print-quota-core/pom.xml print-quota-core/
 
 # Copy the source folders
 COPY ipp-codec/src ipp-codec/src
-COPY print-quota-core/src print-quota-core/
+COPY print-quota-core/src print-quota-core/src
 
 # Build application jar (skip tests for container image assembly)
 RUN mvn clean package -DskipTests -Djacoco.skip=true

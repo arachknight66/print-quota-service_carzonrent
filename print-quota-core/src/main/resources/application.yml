@@ -3,6 +3,8 @@ spring:
     active: dev
   application:
     name: print-quota-service
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
   jpa:
     hibernate:
       ddl-auto: validate

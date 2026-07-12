@@ -40,4 +40,44 @@ public interface PrintLogRepository extends JpaRepository<PrintLog, UUID> {
      * @return list of print logs.
      */
     List<PrintLog> findByUserIdAndTimestampBetween(UUID userId, Instant start, Instant end);
+
+    /**
+     * Advanced audit search supporting dynamic parameters with pagination.
+     */
+    @org.springframework.data.jpa.repository.Query("SELECT pl FROM PrintLog pl WHERE "
+            + "(:username IS NULL OR LOWER(pl.user.domainUsername) LIKE LOWER(CONCAT('%', :username, '%'))) AND "
+            + "(:department IS NULL OR LOWER(pl.user.department) LIKE LOWER(CONCAT('%', :department, '%'))) AND "
+            + "(:printerName IS NULL OR LOWER(pl.printerName) LIKE LOWER(CONCAT('%', :printerName, '%'))) AND "
+            + "(:status IS NULL OR pl.status = :status) AND "
+            + "(:startDate IS NULL OR pl.timestamp >= :startDate) AND "
+            + "(:endDate IS NULL OR pl.timestamp <= :endDate) AND "
+            + "(:documentName IS NULL OR LOWER(pl.documentName) LIKE LOWER(CONCAT('%', :documentName, '%'))) AND "
+            + "(:correlationId IS NULL OR pl.correlationId = :correlationId)")
+    org.springframework.data.domain.Page<PrintLog> searchPrintLogs(
+            @org.springframework.data.repository.query.Param("username") String username,
+            @org.springframework.data.repository.query.Param("department") String department,
+            @org.springframework.data.repository.query.Param("printerName") String printerName,
+            @org.springframework.data.repository.query.Param("status") com.printkeep.quota.core.model.PrintStatus status,
+            @org.springframework.data.repository.query.Param("startDate") Instant startDate,
+            @org.springframework.data.repository.query.Param("endDate") Instant endDate,
+            @org.springframework.data.repository.query.Param("documentName") String documentName,
+            @org.springframework.data.repository.query.Param("correlationId") String correlationId,
+            org.springframework.data.domain.Pageable pageable);
+
+    long countByStatus(com.printkeep.quota.core.model.PrintStatus status);
+
+    @org.springframework.data.jpa.repository.Query("SELECT AVG(pl.pageCount) FROM PrintLog pl WHERE pl.status = com.printkeep.quota.core.model.PrintStatus.SUCCESS")
+    Double findAveragePageCount();
+
+    @org.springframework.data.jpa.repository.Query("SELECT MAX(pl.pageCount) FROM PrintLog pl WHERE pl.status = com.printkeep.quota.core.model.PrintStatus.SUCCESS")
+    Integer findMaxPageCount();
+
+    @org.springframework.data.jpa.repository.Query("SELECT pl.printerName, COUNT(pl) FROM PrintLog pl GROUP BY pl.printerName ORDER BY COUNT(pl) DESC")
+    List<Object[]> findMostActivePrinters(org.springframework.data.domain.Pageable pageable);
+
+    @org.springframework.data.jpa.repository.Query("SELECT pl.user.department, COUNT(pl) FROM PrintLog pl GROUP BY pl.user.department ORDER BY COUNT(pl) DESC")
+    List<Object[]> findMostActiveDepartments(org.springframework.data.domain.Pageable pageable);
+
+    @org.springframework.data.jpa.repository.Query("SELECT pl.user.domainUsername, COUNT(pl) FROM PrintLog pl GROUP BY pl.user.domainUsername ORDER BY COUNT(pl) DESC")
+    List<Object[]> findMostActiveUsers(org.springframework.data.domain.Pageable pageable);
 }

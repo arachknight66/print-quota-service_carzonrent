@@ -36,4 +36,26 @@ public interface QuotaRepository extends JpaRepository<Quota, UUID> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT q FROM Quota q WHERE q.user.id = :userId AND q.month = :month")
     Optional<Quota> findByUserIdAndMonthForUpdate(@Param("userId") UUID userId, @Param("month") String month);
+
+    /**
+     * Search quotas by dynamic filtering with pagination.
+     */
+    @Query("SELECT q FROM Quota q WHERE "
+            + "(:username IS NULL OR LOWER(q.user.domainUsername) LIKE LOWER(CONCAT('%', :username, '%'))) AND "
+            + "(:month IS NULL OR q.month = :month)")
+    org.springframework.data.domain.Page<Quota> searchQuotas(
+            @Param("username") String username,
+            @Param("month") String month,
+            org.springframework.data.domain.Pageable pageable);
+
+    /**
+     * Finds all quotas matching a specific month.
+     */
+    java.util.List<Quota> findByMonth(String month);
+
+    @Query("SELECT SUM(q.allocatedPages) FROM Quota q WHERE q.month = :month")
+    Long sumAllocatedPages(@Param("month") String month);
+
+    @Query("SELECT SUM(q.usedPages) FROM Quota q WHERE q.month = :month")
+    Long sumUsedPages(@Param("month") String month);
 }
