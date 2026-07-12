@@ -61,7 +61,7 @@ public class User {
     private String updatedBy;
 
     @Column(name = "deleted", nullable = false)
-    private boolean deleted = false;
+    private boolean deleted;
 
     /**
      * Pre-persist lifecycle callback to initialize audit details.

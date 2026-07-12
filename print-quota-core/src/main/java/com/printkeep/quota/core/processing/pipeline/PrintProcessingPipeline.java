@@ -2,7 +2,6 @@ package com.printkeep.quota.core.processing.pipeline;
 
 import com.printkeep.quota.codec.model.IppPacket;
 import com.printkeep.quota.core.processing.decision.IppDecision;
-import com.printkeep.quota.core.processing.exception.PrintProcessingException;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
@@ -105,7 +104,7 @@ public class PrintProcessingPipeline {
             case REJECT_INVALID_REQUEST -> invalidPackets.increment();
             case REJECT_UNKNOWN_USER, REJECT_DISABLED_USER -> identityFailures.increment();
             case REJECT_INSUFFICIENT_QUOTA -> quotaFailures.increment();
-            default -> {}
+            default -> { }
         }
 
         final int estimatedPages = context.getMetadata() != null ? context.getMetadata().estimatedPages() : 0;

@@ -41,7 +41,7 @@ public class LdapProperties {
     @Min(value = 500, message = "Read timeout must be at least 500ms")
     private int readTimeout = 5000;
 
-    private boolean sslEnabled = false;
+    private boolean sslEnabled;
 
     private String referral = "ignore";
 
@@ -73,7 +73,7 @@ public class LdapProperties {
     @Getter
     @Setter
     public static class Sync {
-        private boolean enabled = false;
+        private boolean enabled;
 
         @NotBlank(message = "Sync cron expression must not be blank")
         private String cron = "0 0 * * * *"; // default: hourly

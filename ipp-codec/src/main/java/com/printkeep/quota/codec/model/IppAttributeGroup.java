@@ -15,6 +15,7 @@ public record IppAttributeGroup(IppTag tag, List<IppAttribute> attributes) {
         if (attributes == null) {
             throw new IllegalArgumentException("Attributes list must not be null");
         }
+        attributes = List.copyOf(attributes);
     }
 
     /**

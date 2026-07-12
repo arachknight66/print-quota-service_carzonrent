@@ -14,10 +14,27 @@ public record IppPacket(
         List<IppAttributeGroup> attributeGroups,
         byte[] payload
 ) {
-    public IppPacket {
+    public IppPacket(
+            final byte majorVersion,
+            final byte minorVersion,
+            final short operationOrStatus,
+            final int transactionId,
+            final List<IppAttributeGroup> attributeGroups,
+            final byte[] payload) {
         if (attributeGroups == null) {
             throw new IllegalArgumentException("Attribute groups must not be null");
         }
+        this.majorVersion = majorVersion;
+        this.minorVersion = minorVersion;
+        this.operationOrStatus = operationOrStatus;
+        this.transactionId = transactionId;
+        this.attributeGroups = List.copyOf(attributeGroups);
+        this.payload = payload == null ? null : payload.clone();
+    }
+
+    @Override
+    public byte[] payload() {
+        return payload == null ? null : payload.clone();
     }
 
     /**

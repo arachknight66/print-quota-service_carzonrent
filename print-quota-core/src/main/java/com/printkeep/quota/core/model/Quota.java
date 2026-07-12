@@ -58,7 +58,7 @@ public class Quota {
 
     @Min(value = 0, message = "Used pages must be non-negative")
     @Column(name = "used_pages", nullable = false)
-    private int usedPages = 0;
+    private int usedPages;
 
     @Version
     @Column(name = "version", nullable = false)

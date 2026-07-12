@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.ByteArrayOutputStream;
 import java.time.Instant;
@@ -24,6 +25,7 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * Scheduled tasks manager running monthly quota resets, daily summaries,
@@ -81,15 +83,15 @@ public class ReportScheduler {
      * Resets monthly quotas. Executes at midnight on the first day of every month: "0 0 0 1 * *".
      */
     @Scheduled(cron = "${app.cron.quota-reset:0 0 0 1 * *}")
+    @Transactional
     public void executeMonthlyQuotaReset() {
         schedulerExecutions.increment();
         final String nextMonth = MONTH_FORMATTER.format(Instant.now());
         log.info("Starting scheduled monthly user quota allocation for month: {}", nextMonth);
 
-        final List<User> activeUsers = userRepository.findAll();
-        int allocations = 0;
-
-        for (final User user : activeUsers) {
+        final int[] allocations = {0};
+        try (Stream<User> activeUsers = userRepository.streamAll()) {
+            activeUsers.forEach(user -> {
             if (quotaRepository.findByUserIdAndMonth(user.getId(), nextMonth).isEmpty()) {
                 final Quota quota = new Quota();
                 quota.setUser(user);
@@ -97,18 +99,20 @@ public class ReportScheduler {
                 quota.setAllocatedPages(defaultQuotaLimit);
                 quota.setUsedPages(0);
                 quotaRepository.save(quota);
-                allocations++;
+                    allocations[0]++;
             }
+            });
         }
 
-        quotaResets.increment(allocations);
-        log.info("Finished scheduled monthly quota reset. Created {} user allocations.", allocations);
+        quotaResets.increment(allocations[0]);
+        log.info("Finished scheduled monthly quota reset. Created {} user allocations.", allocations[0]);
     }
 
     /**
      * Generates and emails the daily print summary. Runs daily at 11 PM: "0 0 23 * * *".
      */
     @Scheduled(cron = "${app.cron.daily-summary:0 0 23 * * *}")
+    @Transactional(readOnly = true)
     public void executeDailySummary() {
         schedulerExecutions.increment();
         log.info("Generating daily print quota summary report...");
@@ -131,9 +135,9 @@ public class ReportScheduler {
         );
 
         // Export logs to attachment
-        final List<PrintLog> logs = printLogRepository.findAll();
         byte[] attachmentBytes = null;
-        try (final ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+        try (final ByteArrayOutputStream out = new ByteArrayOutputStream();
+                Stream<PrintLog> logs = printLogRepository.streamAllForExport()) {
             exportService.exportPrintLogsToExcel(logs, out);
             attachmentBytes = out.toByteArray();
         } catch (final Exception e) {

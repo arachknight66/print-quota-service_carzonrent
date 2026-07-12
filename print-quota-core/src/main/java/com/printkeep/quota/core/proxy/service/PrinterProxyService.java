@@ -87,8 +87,6 @@ public class PrinterProxyService {
             final String clientHost) throws IOException {
 
         requestsProxied.increment();
-        final Instant startTime = Instant.now();
-
         // 1. Capture attributes header block without loading print document in memory
         byte[] capturedHeader;
         try {

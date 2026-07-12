@@ -4,7 +4,9 @@ import com.printkeep.quota.core.model.PrintLog;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Stream;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -12,6 +14,14 @@ import org.springframework.stereotype.Repository;
  */
 @Repository
 public interface PrintLogRepository extends JpaRepository<PrintLog, UUID> {
+
+    /**
+     * Streams all print logs for export jobs without materializing the entire table.
+     *
+     * @return stream of print logs.
+     */
+    @Query("SELECT pl FROM PrintLog pl LEFT JOIN FETCH pl.user")
+    Stream<PrintLog> streamAllForExport();
 
     /**
      * Retrieves all print logs associated with a specific user.

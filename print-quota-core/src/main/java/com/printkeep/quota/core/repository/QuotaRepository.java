@@ -4,6 +4,7 @@ import com.printkeep.quota.core.model.Quota;
 import jakarta.persistence.LockModeType;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -15,6 +16,14 @@ import org.springframework.stereotype.Repository;
  */
 @Repository
 public interface QuotaRepository extends JpaRepository<Quota, UUID> {
+
+    /**
+     * Streams all quota records for export jobs without materializing the entire table.
+     *
+     * @return stream of quota records.
+     */
+    @Query("SELECT q FROM Quota q LEFT JOIN FETCH q.user")
+    Stream<Quota> streamAllForExport();
 
     /**
      * Finds a quota allocation for a user during a specific month.
@@ -52,6 +61,15 @@ public interface QuotaRepository extends JpaRepository<Quota, UUID> {
      * Finds all quotas matching a specific month.
      */
     java.util.List<Quota> findByMonth(String month);
+
+    /**
+     * Streams quota records matching a specific month for export jobs.
+     *
+     * @param month target month.
+     * @return stream of quota records.
+     */
+    @Query("SELECT q FROM Quota q LEFT JOIN FETCH q.user WHERE q.month = :month")
+    Stream<Quota> streamByMonthForExport(@Param("month") String month);
 
     @Query("SELECT SUM(q.allocatedPages) FROM Quota q WHERE q.month = :month")
     Long sumAllocatedPages(@Param("month") String month);

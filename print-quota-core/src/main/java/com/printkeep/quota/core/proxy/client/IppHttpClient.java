@@ -1,6 +1,7 @@
 package com.printkeep.quota.core.proxy.client;
 
 import com.printkeep.quota.core.proxy.routing.PrinterConfig;
+import jakarta.annotation.PreDestroy;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.ConnectException;
@@ -10,8 +11,12 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.Locale;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -27,17 +32,37 @@ public class IppHttpClient {
 
     private final HttpClient httpClient;
     private final PrinterConfig config;
+    private final ExecutorService executor;
 
     public IppHttpClient(final PrinterConfig config) {
         this.config = config;
 
-        // Custom executor service to pool and manage worker threads for connection reuse
-        final ExecutorService executor = Executors.newCachedThreadPool();
+        this.executor = new ThreadPoolExecutor(
+                config.getForwardingCoreThreads(),
+                config.getForwardingMaxThreads(),
+                60L,
+                TimeUnit.SECONDS,
+                new ArrayBlockingQueue<>(config.getForwardingQueueCapacity()),
+                new NamedThreadFactory(),
+                new ThreadPoolExecutor.CallerRunsPolicy());
 
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofMillis(config.getConnectTimeoutMs()))
-                .executor(executor)
+                .executor(this.executor)
                 .build();
+    }
+
+    @PreDestroy
+    public void shutdown() {
+        executor.shutdown();
+        try {
+            if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
+                executor.shutdownNow();
+            }
+        } catch (final InterruptedException e) {
+            executor.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
     }
 
     /**
@@ -82,7 +107,7 @@ public class IppHttpClient {
                 Thread.sleep(delay);
             } catch (final IOException e) {
                 // Determine if this is a connection reset or network error we want to retry
-                final String msg = e.getMessage() != null ? e.getMessage().toLowerCase() : "";
+                final String msg = e.getMessage() != null ? e.getMessage().toLowerCase(Locale.ROOT) : "";
                 if (msg.contains("connection reset") || msg.contains("broken pipe")) {
                     log.warn("Connection reset by printer {} on attempt {}/{}", printerUri, attempts, maxRetries, e);
                     if (attempts >= maxRetries) {
@@ -93,6 +118,18 @@ public class IppHttpClient {
                     throw e;
                 }
             }
+        }
+    }
+
+    private static final class NamedThreadFactory implements java.util.concurrent.ThreadFactory {
+
+        private final AtomicInteger counter = new AtomicInteger();
+
+        @Override
+        public Thread newThread(final Runnable runnable) {
+            final Thread thread = new Thread(runnable, "ipp-forwarder-" + counter.incrementAndGet());
+            thread.setDaemon(true);
+            return thread;
         }
     }
 }

@@ -2,16 +2,18 @@ package com.printkeep.quota.core.admin.service;
 
 import com.printkeep.quota.core.model.PrintLog;
 import com.printkeep.quota.core.model.Quota;
-import com.printkeep.quota.core.model.User;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * Service handling data exports in Excel (.xlsx) and CSV formats using streaming strategies
@@ -24,6 +26,13 @@ public class ExcelExportService {
      * Streams PrintLog records into Excel format.
      */
     public void exportPrintLogsToExcel(final List<PrintLog> logs, final OutputStream out) throws IOException {
+        exportPrintLogsToExcel(logs.stream(), out);
+    }
+
+    /**
+     * Streams PrintLog records into Excel format.
+     */
+    public void exportPrintLogsToExcel(final Stream<PrintLog> logs, final OutputStream out) throws IOException {
         try (final SXSSFWorkbook workbook = new SXSSFWorkbook(100)) { // Flush rows to disk after 100 rows
             final Sheet sheet = workbook.createSheet("Print Logs");
 
@@ -38,9 +47,9 @@ public class ExcelExportService {
             header.createCell(6).setCellValue("Status");
             header.createCell(7).setCellValue("Correlation ID");
 
-            int rowIdx = 1;
-            for (final PrintLog log : logs) {
-                final Row row = sheet.createRow(rowIdx++);
+            final int[] rowIdx = {1};
+            logs.forEach(log -> {
+                final Row row = sheet.createRow(rowIdx[0]++);
                 row.createCell(0).setCellValue(log.getId().toString());
                 row.createCell(1).setCellValue(log.getTimestamp().toString());
                 row.createCell(2).setCellValue(log.getUser() != null ? log.getUser().getDomainUsername() : "N/A");
@@ -49,7 +58,7 @@ public class ExcelExportService {
                 row.createCell(5).setCellValue(log.getPageCount());
                 row.createCell(6).setCellValue(log.getStatus().name());
                 row.createCell(7).setCellValue(log.getCorrelationId());
-            }
+            });
 
             workbook.write(out);
             workbook.dispose(); // Delete temp files
@@ -60,11 +69,18 @@ public class ExcelExportService {
      * Streams PrintLog records into CSV format.
      */
     public void exportPrintLogsToCsv(final List<PrintLog> logs, final OutputStream out) {
-        final PrintWriter writer = new PrintWriter(out);
+        exportPrintLogsToCsv(logs.stream(), out);
+    }
+
+    /**
+     * Streams PrintLog records into CSV format.
+     */
+    public void exportPrintLogsToCsv(final Stream<PrintLog> logs, final OutputStream out) {
+        final PrintWriter writer = new PrintWriter(new OutputStreamWriter(out, StandardCharsets.UTF_8));
         writer.println("ID,Timestamp,User,Document,Printer,Pages,Status,CorrelationID");
 
-        for (final PrintLog log : logs) {
-            writer.printf("%s,%s,%s,%s,%s,%d,%s,%s\n",
+        logs.forEach(log -> {
+            writer.printf("%s,%s,%s,%s,%s,%d,%s,%s%n",
                     log.getId(),
                     log.getTimestamp(),
                     log.getUser() != null ? escapeCsv(log.getUser().getDomainUsername()) : "N/A",
@@ -74,7 +90,7 @@ public class ExcelExportService {
                     log.getStatus().name(),
                     escapeCsv(log.getCorrelationId())
             );
-        }
+        });
         writer.flush();
     }
 
@@ -82,6 +98,13 @@ public class ExcelExportService {
      * Streams Quota records into Excel format.
      */
     public void exportQuotasToExcel(final List<Quota> quotas, final OutputStream out) throws IOException {
+        exportQuotasToExcel(quotas.stream(), out);
+    }
+
+    /**
+     * Streams Quota records into Excel format.
+     */
+    public void exportQuotasToExcel(final Stream<Quota> quotas, final OutputStream out) throws IOException {
         try (final SXSSFWorkbook workbook = new SXSSFWorkbook(100)) {
             final Sheet sheet = workbook.createSheet("Quotas");
 
@@ -93,16 +116,16 @@ public class ExcelExportService {
             header.createCell(4).setCellValue("Used");
             header.createCell(5).setCellValue("Remaining");
 
-            int rowIdx = 1;
-            for (final Quota quota : quotas) {
-                final Row row = sheet.createRow(rowIdx++);
+            final int[] rowIdx = {1};
+            quotas.forEach(quota -> {
+                final Row row = sheet.createRow(rowIdx[0]++);
                 row.createCell(0).setCellValue(quota.getId().toString());
                 row.createCell(1).setCellValue(quota.getUser().getDomainUsername());
                 row.createCell(2).setCellValue(quota.getMonth());
                 row.createCell(3).setCellValue(quota.getAllocatedPages());
                 row.createCell(4).setCellValue(quota.getUsedPages());
                 row.createCell(5).setCellValue(quota.getAllocatedPages() - quota.getUsedPages());
-            }
+            });
 
             workbook.write(out);
             workbook.dispose();
@@ -113,11 +136,18 @@ public class ExcelExportService {
      * Streams Quota records into CSV format.
      */
     public void exportQuotasToCsv(final List<Quota> quotas, final OutputStream out) {
-        final PrintWriter writer = new PrintWriter(out);
+        exportQuotasToCsv(quotas.stream(), out);
+    }
+
+    /**
+     * Streams Quota records into CSV format.
+     */
+    public void exportQuotasToCsv(final Stream<Quota> quotas, final OutputStream out) {
+        final PrintWriter writer = new PrintWriter(new OutputStreamWriter(out, StandardCharsets.UTF_8));
         writer.println("ID,User,Month,Allocated,Used,Remaining");
 
-        for (final Quota quota : quotas) {
-            writer.printf("%s,%s,%s,%d,%d,%d\n",
+        quotas.forEach(quota -> {
+            writer.printf("%s,%s,%s,%d,%d,%d%n",
                     quota.getId(),
                     escapeCsv(quota.getUser().getDomainUsername()),
                     quota.getMonth(),
@@ -125,7 +155,7 @@ public class ExcelExportService {
                     quota.getUsedPages(),
                     quota.getAllocatedPages() - quota.getUsedPages()
             );
-        }
+        });
         writer.flush();
     }
 

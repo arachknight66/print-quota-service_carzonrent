@@ -17,6 +17,7 @@ public record IppAttribute(String name, IppTag tag, List<Object> values) {
         if (values == null) {
             throw new IllegalArgumentException("Attribute values must not be null");
         }
+        values = List.copyOf(values);
     }
 
     /**

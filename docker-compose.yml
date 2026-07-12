@@ -5,7 +5,7 @@ services:
     environment:
       POSTGRES_DB: ${DB_NAME:-printquota}
       POSTGRES_USER: ${DB_USERNAME:-printuser}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-printpassword}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
     ports:
       - "5432:5432"
     volumes:
@@ -24,7 +24,7 @@ services:
     container_name: print-quota-pgadmin
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@company.local}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:?PGADMIN_PASSWORD is required}
       PGADMIN_CONFIG_ENHANCED_COOKIE_PROTECTION: "True"
     ports:
       - "5050:80"
@@ -41,12 +41,13 @@ services:
     environment:
       LDAP_ORGANISATION: "Company"
       LDAP_DOMAIN: "company.local"
-      LDAP_ADMIN_PASSWORD: "admin"
+      LDAP_ADMIN_PASSWORD: ${LDAP_ADMIN_PASSWORD:?LDAP_ADMIN_PASSWORD is required}
+      LDAP_TLS: "false"
     ports:
       - "389:389"
       - "636:636"
     volumes:
-      - ./docker/ldap/bootstrap.ldif:/container/service/slapd/assets/config/bootstrap.ldif:ro
+      - ./docker/ldap/bootstrap.ldif:/container/service/slapd/assets/config/bootstrap.ldif
     networks:
       - printquota-net
     healthcheck:
@@ -67,12 +68,14 @@ services:
       SPRING_PROFILES_ACTIVE: prod
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${DB_NAME:-printquota}
       SPRING_DATASOURCE_USERNAME: ${DB_USERNAME:-printuser}
-      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-printpassword}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
       LDAP_URL: ldap://ldap:389
       LDAP_BASE_DN: dc=company,dc=local
       LDAP_BIND_DN: cn=admin,dc=company,dc=local
-      LDAP_BIND_PASSWORD: admin
+      LDAP_BIND_PASSWORD: ${LDAP_BIND_PASSWORD:?LDAP_BIND_PASSWORD is required}
       LDAP_SEARCH_BASE: ou=users
+      LDAP_GROUP_SEARCH_BASE: ou=groups
+      LDAP_GROUP_SEARCH_FILTER: ${LDAP_GROUP_SEARCH_FILTER:-(member={0})}
       LDAP_SYNC_ENABLED: "false"
     volumes:
       - app_logs:/app/logs

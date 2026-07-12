@@ -23,4 +23,7 @@ public class PrinterConfig {
     private int maxRetryCount = 3;
     private int retryDelayMs = 1000;
     private int bufferSize = 8192;
+    private int forwardingCoreThreads = 4;
+    private int forwardingMaxThreads = 16;
+    private int forwardingQueueCapacity = 100;
 }

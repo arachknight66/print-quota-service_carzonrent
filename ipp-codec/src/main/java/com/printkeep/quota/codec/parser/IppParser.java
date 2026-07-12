@@ -19,6 +19,10 @@ import java.util.List;
  */
 public final class IppParser {
 
+    private static final int BUFFER_SIZE = 4096;
+    private static final int INTEGER_VALUE_LENGTH = 4;
+    private static final int BOOLEAN_VALUE_LENGTH = 1;
+
     private IppParser() {
         // Prevent instantiation
     }
@@ -85,7 +89,11 @@ public final class IppParser {
 
                     if (name.isEmpty() && lastAttribute != null) {
                         // This is an additional value for the last attribute (multi-value attribute)
-                        lastAttribute.values().add(parsedValue);
+                        final List<Object> values = new ArrayList<>(lastAttribute.values());
+                        values.add(parsedValue);
+                        final IppAttribute updatedAttribute = new IppAttribute(lastAttribute.name(), lastAttribute.tag(), values);
+                        currentAttributes.set(currentAttributes.size() - 1, updatedAttribute);
+                        lastAttribute = updatedAttribute;
                     } else if (!name.isEmpty()) {
                         // New attribute
                         final List<Object> values = new ArrayList<>();
@@ -101,10 +109,11 @@ public final class IppParser {
 
             // Read remaining stream as raw print payload (document data)
             final ByteArrayOutputStream payloadStream = new ByteArrayOutputStream();
-            final byte[] buffer = new byte[4096];
-            int count;
-            while ((count = in.read(buffer)) != -1) {
+            final byte[] buffer = new byte[BUFFER_SIZE];
+            int count = in.read(buffer);
+            while (count != -1) {
                 payloadStream.write(buffer, 0, count);
+                count = in.read(buffer);
             }
             final byte[] payload = payloadStream.toByteArray();
 
@@ -119,14 +128,16 @@ public final class IppParser {
             return null;
         }
         if (tag == IppTag.INTEGER || tag == IppTag.ENUM) {
-            if (bytes.length != 4) {
-                throw new IppParserException("Integer/Enum tag must have 4 bytes value. Found: " + bytes.length);
+            if (bytes.length != INTEGER_VALUE_LENGTH) {
+                throw new IppParserException(
+                        "Integer/Enum tag must have " + INTEGER_VALUE_LENGTH + " bytes value. Found: " + bytes.length);
             }
             return ByteBuffer.wrap(bytes).getInt();
         }
         if (tag == IppTag.BOOLEAN) {
-            if (bytes.length != 1) {
-                throw new IppParserException("Boolean tag must have 1 byte value. Found: " + bytes.length);
+            if (bytes.length != BOOLEAN_VALUE_LENGTH) {
+                throw new IppParserException(
+                        "Boolean tag must have " + BOOLEAN_VALUE_LENGTH + " byte value. Found: " + bytes.length);
             }
             return bytes[0] != 0x00;
         }

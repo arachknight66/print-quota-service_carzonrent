@@ -19,3 +19,17 @@ logging:
     org.springframework.web: INFO
     org.springframework.ldap: DEBUG
     com.printkeep.quota.core.identity: DEBUG
+
+management:
+  endpoint:
+    health:
+      show-details: always
+
+app:
+  ldap:
+    urls:
+      - ${LDAP_URL:ldap://localhost:389}
+    base-dn: ${LDAP_BASE_DN:dc=company,dc=local}
+    username: ${LDAP_BIND_DN:cn=admin,dc=company,dc=local}
+    password: ${LDAP_BIND_PASSWORD:admin}
+    search-base: ${LDAP_SEARCH_BASE:ou=users}

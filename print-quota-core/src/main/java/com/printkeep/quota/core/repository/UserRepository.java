@@ -3,7 +3,9 @@ package com.printkeep.quota.core.repository;
 import com.printkeep.quota.core.model.User;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -11,6 +13,14 @@ import org.springframework.stereotype.Repository;
  */
 @Repository
 public interface UserRepository extends JpaRepository<User, UUID> {
+
+    /**
+     * Streams all users for scheduled allocation processing.
+     *
+     * @return stream of users.
+     */
+    @Query("SELECT u FROM User u")
+    Stream<User> streamAll();
 
     /**
      * Finds an active user by their domain username.
