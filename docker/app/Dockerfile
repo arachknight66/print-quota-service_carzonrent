@@ -32,7 +32,8 @@ WORKDIR /app
 COPY --from=builder /build/print-quota-core/target/print-quota-core-1.0.0.jar app.jar
 
 # Enforce secure file ownership
-RUN chown -R printuser:printgroup /app
+RUN mkdir -p /app/logs /app/reports /app/spool /app/certs && \
+    chown -R printuser:printgroup /app
 
 # Switch to the non-root user
 USER 10001:10001
@@ -42,6 +43,7 @@ EXPOSE 8080
 
 # Environment variables for container-aware JVM memory tuning and garbage collection
 ENV JAVA_OPTS="-XX:MaxRAMPercentage=75.0 -XX:+UseG1GC -XX:+ExitOnOutOfMemoryError"
+ENV LOG_PATH="/app/logs"
 
 # Startup command propagating JVM options
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]

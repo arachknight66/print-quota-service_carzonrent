@@ -49,7 +49,7 @@ services:
     networks:
       - printquota-net
     healthcheck:
-      test: ["CMD", "ldapsearch", "-x", "-H", "ldap://localhost:389", "-b", "dc=company,dc=local", "-s", "base"]
+      test: ["CMD", "ldapsearch", "-x", "-H", "ldap://localhost:389", "-b", "", "-s", "base", "namingContexts"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -64,10 +64,13 @@ services:
       - "8080:8080"
     environment:
       SPRING_PROFILES_ACTIVE: prod
+      SERVER_PORT: 8080
+      SSL_ENABLED: "false"
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${DB_NAME:-printquota}
       SPRING_DATASOURCE_USERNAME: ${DB_USERNAME:-printuser}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
       LDAP_URL: ldap://ldap:389
+      LDAP_SSL_ENABLED: "false"
       LDAP_BASE_DN: dc=company,dc=local
       LDAP_BIND_DN: cn=admin,dc=company,dc=local
       LDAP_BIND_PASSWORD: ${LDAP_BIND_PASSWORD:?LDAP_BIND_PASSWORD is required}
@@ -76,6 +79,7 @@ services:
       LDAP_GROUP_SEARCH_BASE: ou=groups
       LDAP_GROUP_SEARCH_FILTER: ${LDAP_GROUP_SEARCH_FILTER:-(member={0})}
       LDAP_SYNC_ENABLED: "false"
+      LOG_PATH: /app/logs
     volumes:
       - app_logs:/app/logs
       - app_reports:/app/reports

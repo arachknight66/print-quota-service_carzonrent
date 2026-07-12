@@ -46,7 +46,7 @@ management:
         readiness:
           include: readinessState,db,ldap
         startup:
-          include: db,liquibase
+          include: db
 
 info:
   app:

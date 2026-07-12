@@ -38,7 +38,7 @@ app:
   ldap:
     urls:
       - ${LDAP_URL:ldaps://dc01.company.local:636}
-    ssl-enabled: true
+    ssl-enabled: ${LDAP_SSL_ENABLED:true}
     connection-timeout: 3000
     read-timeout: 3000
     pool:

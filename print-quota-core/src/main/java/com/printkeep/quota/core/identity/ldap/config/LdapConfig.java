@@ -1,9 +1,11 @@
 package com.printkeep.quota.core.identity.ldap.config;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.ldap.core.ContextSource;
 import org.springframework.ldap.core.LdapTemplate;
 import org.springframework.ldap.core.support.LdapContextSource;
@@ -57,7 +59,10 @@ public class LdapConfig {
      * @return pooled context source.
      */
     @Bean
-    public ContextSource contextSource(final LdapContextSource ldapContextSource, final LdapProperties properties) {
+    @Primary
+    public ContextSource contextSource(
+            @Qualifier("ldapContextSource") final LdapContextSource ldapContextSource,
+            final LdapProperties properties) {
         final org.springframework.ldap.pool2.factory.PoolConfig poolConfig = new org.springframework.ldap.pool2.factory.PoolConfig();
         poolConfig.setMinIdlePerKey(properties.getPool().getMinIdle());
         poolConfig.setMaxTotal(properties.getPool().getMaxActive());
@@ -76,7 +81,7 @@ public class LdapConfig {
      * @return LdapTemplate instance.
      */
     @Bean
-    public LdapTemplate ldapTemplate(final ContextSource contextSource) {
+    public LdapTemplate ldapTemplate(@Qualifier("contextSource") final ContextSource contextSource) {
         return new LdapTemplate(contextSource);
     }
 }

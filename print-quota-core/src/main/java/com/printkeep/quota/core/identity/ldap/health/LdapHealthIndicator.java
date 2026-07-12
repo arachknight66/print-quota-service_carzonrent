@@ -6,6 +6,7 @@ import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.ldap.core.LdapTemplate;
 import org.springframework.stereotype.Component;
 
+import javax.naming.directory.SearchControls;
 import java.time.Duration;
 import java.time.Instant;
 
@@ -27,12 +28,11 @@ public class LdapHealthIndicator implements HealthIndicator {
     public Health health() {
         final Instant start = Instant.now();
         try {
-            // Perform a minimal query against the configured search base to check connection liveness.
-            // Limits results to 1 to minimize connection and processing overhead.
+            // Probe the LDAP naming context instead of requiring seeded directory entries.
             ldapTemplate.search(
-                    properties.getSearchBase(),
+                    "",
                     "(objectClass=*)",
-                    1,
+                    SearchControls.OBJECT_SCOPE,
                     (org.springframework.ldap.core.AttributesMapper<Object>) attrs -> null
             );
 
@@ -43,16 +43,16 @@ public class LdapHealthIndicator implements HealthIndicator {
                 // If response time is slow (> 2 seconds), report as DEGRADED.
                 return Health.status("DEGRADED")
                         .withDetail("message", "LDAP server response latency is high")
-                        .withDetail("responseTimeMs", responseTimeMs)
-                        .withDetail("urls", maskedUrls)
-                        .withDetail("searchBase", properties.getSearchBase())
-                        .build();
+                    .withDetail("responseTimeMs", responseTimeMs)
+                    .withDetail("urls", maskedUrls)
+                    .withDetail("configuredSearchBase", properties.getSearchBase())
+                    .build();
             }
 
             return Health.up()
                     .withDetail("responseTimeMs", responseTimeMs)
                     .withDetail("urls", maskedUrls)
-                    .withDetail("searchBase", properties.getSearchBase())
+                    .withDetail("configuredSearchBase", properties.getSearchBase())
                     .build();
 
         } catch (final Exception e) {

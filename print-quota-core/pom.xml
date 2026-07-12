@@ -66,6 +66,12 @@
             <artifactId>spring-security-ldap</artifactId>
         </dependency>
 
+        <!-- Apache Commons Pool for pooled LDAP context sources -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-pool2</artifactId>
+        </dependency>
+
         <!-- Spring Data JPA -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

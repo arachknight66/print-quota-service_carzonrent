@@ -3,6 +3,7 @@ package com.printkeep.quota.core.identity.ldap.repository;
 import com.printkeep.quota.core.identity.ldap.config.LdapProperties;
 import com.printkeep.quota.core.identity.ldap.dto.LdapUserDto;
 import com.printkeep.quota.core.identity.ldap.exception.LdapConnectionException;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.ldap.control.PagedResultsDirContextProcessor;
 import org.springframework.ldap.core.AttributesMapper;
@@ -31,7 +32,10 @@ public class LdapUserRepository {
     private final ContextSource contextSource;
     private final LdapProperties properties;
 
-    public LdapUserRepository(final LdapTemplate ldapTemplate, final ContextSource contextSource, final LdapProperties properties) {
+    public LdapUserRepository(
+            final LdapTemplate ldapTemplate,
+            @Qualifier("contextSource") final ContextSource contextSource,
+            final LdapProperties properties) {
         this.ldapTemplate = ldapTemplate;
         this.contextSource = contextSource;
         this.properties = properties;
