@@ -48,6 +48,7 @@ management:
         startup:
           include: db
 
+
 info:
   app:
     name: print-quota-service
@@ -56,6 +57,8 @@ info:
 
 # LDAP Active Directory Configuration (overridden by profile or env vars)
 app:
+  spool:
+    directory: ${SPOOL_DIRECTORY:/var/spool/print-quota}
   ldap:
     urls:
       - ${LDAP_URL}

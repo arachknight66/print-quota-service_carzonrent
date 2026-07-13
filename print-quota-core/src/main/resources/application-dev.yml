@@ -26,6 +26,8 @@ management:
       show-details: always
 
 app:
+  spool:
+    directory: ${java.io.tmpdir}/print-quota-spool
   ldap:
     urls:
       - ${LDAP_URL:ldap://localhost:389}
