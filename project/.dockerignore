@@ -2,5 +2,4 @@
 .gitignore
 README.md
 verification-output.txt
-__pycache__/
-*.pyc
+app/target/

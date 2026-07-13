@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Carzonrent enterprise QA environment status dashboard - Static HTML Edition">
+  <title>Carzonrent | QA Environment (Static HTML)</title>
+  <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+</head>
+<body bgcolor="#c0c0c0" text="#000000" link="#0000ff" vlink="#800080" alink="#ff0000">
+
+  <!-- News marquee scrolling banner -->
+  <marquee bgcolor="#000080" scrollamount="4">
+    <font face="Courier New, monospace" color="#ffffff"><b>*** WARNING: CARZONRENT ENTERPRISE QA PLATFORM CONTROL PLANE ACTIVE *** DEPLOYMENT BUILD v<span th:text="${applicationVersion}">2.0.0</span> OPERATIONAL *** HEALTH CHECKS STABLE ***</b></font>
+  </marquee>
+
+  <br>
+
+  <center>
+    <!-- Big Title Header -->
+    <table border="0" cellpadding="10" cellspacing="0" width="90%">
+      <tr>
+        <td align="center">
+          <font face="Times New Roman, Georgia, serif" size="6"><b>CARZONRENT QA INFRASTRUCTURE</b></font><br>
+          <font face="Times New Roman, Georgia, serif" size="4"><i>Quality Assurance Validation Gateway & Control Panel</i></font>
+        </td>
+      </tr>
+    </table>
+  </center>
+
+  <hr size="4" width="90%" color="#808080">
+
+  <center>
+    <!-- System Status Bar -->
+    <table border="2" cellpadding="8" cellspacing="0" bgcolor="#ffffea" bordercolor="#ff0000" width="80%">
+      <tr>
+        <td align="center">
+          <svg width="24" height="24" viewBox="0 0 32 32">
+            <polygon points="16,2 30,28 2,28" fill="#ffff00" stroke="#000" stroke-width="2"/>
+            <rect x="15" y="10" width="2" height="8" fill="#000"/>
+            <rect x="15" y="21" width="2" height="2" fill="#000"/>
+          </svg>
+          <font face="Courier New, monospace" size="3"><b>[ ENVIRONMENT STATUS: OPERATIONAL ]</b></font>
+          <svg width="24" height="24" viewBox="0 0 32 32">
+            <polygon points="16,2 30,28 2,28" fill="#ffff00" stroke="#000" stroke-width="2"/>
+            <rect x="15" y="10" width="2" height="8" fill="#000"/>
+            <rect x="15" y="21" width="2" height="2" fill="#000"/>
+          </svg>
+          <br>
+          <font face="Times New Roman, Georgia, serif" size="2">
+            Server Render Time: <span th:text="${currentTime}">2026-07-13T00:00:00Z</span>
+          </font>
+        </td>
+      </tr>
+    </table>
+  </center>
+
+  <br>
+
+  <!-- Content Grid using centered table columns -->
+  <center>
+    <table border="0" cellpadding="5" cellspacing="10" width="90%">
+      <tr valign="top">
+        <!-- Left Side Column -->
+        <td width="30%">
+          <table border="3" cellpadding="8" cellspacing="2" width="100%" bgcolor="#dfdfdf">
+            <tr bgcolor="#808080">
+              <td><font color="#ffffff" face="Arial, Helvetica, sans-serif" size="3"><b>Documentation Index</b></font></td>
+            </tr>
+            <tr>
+              <td>
+                <font face="Times New Roman, Georgia, serif" size="3">
+                  Read internal reference logs:
+                  <ul>
+                    <li><a href="https://vantage.csw.lenovo.com/v1/web/containerwidget/default/" target="_blank">DevOps Portal Link</a></li>
+                  </ul>
+                  Run diagnostic procedures:
+                  <ul>
+                    <li><a href="/health" target="_blank">Raw Health Endpoint</a></li>
+                    <li><a href="/info" target="_blank">Raw Info Endpoint</a></li>
+                  </ul>
+                  Configuration rules:
+                  <ul>
+                    <li>Apache Reverse Proxy</li>
+                    <li>CentOS Linux</li>
+                  </ul>
+                </font>
+              </td>
+            </tr>
+          </table>
+
+          <br>
+
+          <!-- Hits counter panel -->
+          <table border="2" cellpadding="6" cellspacing="0" width="100%" bgcolor="#000000">
+            <tr>
+              <td align="center">
+                <font color="#ffffff" face="Courier New, monospace" size="2">
+                  YOU ARE VISITOR NUMBER<br>
+                  <b>[ 0 0 4 1 2 8 ]</b><br>
+                  SINCE INITIALIZATION
+                </font>
+              </td>
+            </tr>
+          </table>
+        </td>
+
+        <!-- Right Side Column -->
+        <td width="70%">
+          <table border="3" cellpadding="8" cellspacing="2" width="100%" bgcolor="#dfdfdf">
+            <tr bgcolor="#808080">
+              <td><font color="#ffffff" face="Arial, Helvetica, sans-serif" size="3"><b>System Telemetry & Live Parameters</b></font></td>
+            </tr>
+            <tr>
+              <td>
+                <p><font face="Times New Roman, Georgia, serif" size="3">The table below outlines current configuration fields dynamically compiled by the local Spring Boot backend application.</font></p>
+                
+                <table border="3" cellpadding="6" cellspacing="2" width="100%" bgcolor="#ffffff" bordercolor="#808080">
+                  <tr bgcolor="#c0c0c0">
+                    <td align="left"><b>Field Parameter</b></td>
+                    <td align="left"><b>Telemetry Value</b></td>
+                    <td align="left"><b>Description / Role</b></td>
+                  </tr>
+                  <tr>
+                    <td>Hostname</td>
+                    <td><font face="Courier New, monospace"><b><span th:text="${hostname}">qa.carzonrent</span></b></font></td>
+                    <td>Internal hostname resolved by DNS</td>
+                  </tr>
+                  <tr>
+                    <td>Operating System</td>
+                    <td><span th:text="${operatingSystem}">Linux</span></td>
+                    <td>Enterprise Linux server base OS</td>
+                  </tr>
+                  <tr>
+                    <td>Java Version</td>
+                    <td><span th:text="${javaVersion}">21</span></td>
+                    <td>Java runtime environment version</td>
+                  </tr>
+                  <tr>
+                    <td>Spring Boot Version</td>
+                    <td><span th:text="${springBootVersion}">3.3.x</span></td>
+                    <td>Application core framework version</td>
+                  </tr>
+                  <tr>
+                    <td>Apache Status</td>
+                    <td><font color="green"><b>RUNNING</b></font></td>
+                    <td>PID 1 Foreground Apache process</td>
+                  </tr>
+                  <tr>
+                    <td>Reverse Proxy</td>
+                    <td><font color="green"><b>ENABLED</b></font></td>
+                    <td>mod_proxy traffic forwarding active</td>
+                  </tr>
+                  <tr>
+                    <td>Backend Port</td>
+                    <td><font face="Courier New, monospace">127.0.0.1:8085</font></td>
+                    <td>Local loopback application socket</td>
+                  </tr>
+                  <tr>
+                    <td>Container Name</td>
+                    <td><font face="Courier New, monospace">qa.carzonrent</font></td>
+                    <td>Docker service runtime identifier</td>
+                  </tr>
+                  <tr>
+                    <td>Deployment Status</td>
+                    <td><font color="green"><b>HEALTHY</b></font></td>
+                    <td>Proxy map and backend are online</td>
+                  </tr>
+                  <tr>
+                    <td>Application Version</td>
+                    <td><font face="Courier New, monospace"><b><span th:text="${applicationVersion}">2.0.0</span></b></font></td>
+                    <td>QA release package identification tag</td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+
+          <br>
+
+          <!-- Ingress Flowchart -->
+          <table border="3" cellpadding="8" cellspacing="2" width="100%" bgcolor="#dfdfdf">
+            <tr bgcolor="#808080">
+              <td><font color="#ffffff" face="Arial, Helvetica, sans-serif" size="3"><b>Network Ingress Flow Diagram</b></font></td>
+            </tr>
+            <tr>
+              <td>
+                <p><font face="Times New Roman, Georgia, serif" size="3">ASCII diagram representing the path from Client browser (Port 8081) through the CentOS Apache container (Port 80) to Python's loopback backend socket (Port 8085).</font></p>
+                <center>
+                  <pre>
+  +--------------------------+
+  |   CLIENT WEB BROWSER     |
+  |  (Windows / curl tool)   |
+  +--------------------------+
+               |
+               | HTTP request to Port 8081
+               v
+  +--------------------------+
+  |   APACHE HTTP SERVER     |
+  |  (Docker container :80)  |
+  +--------------------------+
+               |
+               | ProxyPass to 127.0.0.1:8085
+               v
+  +--------------------------+
+  |   SPRING BOOT QA BACKEND |
+  |  (Loopback-only listener)|
+  +--------------------------+
+                  </pre>
+                </center>
+              </td>
+            </tr>
+          </table>
+
+          <br>
+
+          <!-- Health Diagnostics Panel (Static HTML Submit Form) -->
+          <table border="3" cellpadding="8" cellspacing="2" width="100%" bgcolor="#dfdfdf">
+            <tr bgcolor="#808080">
+              <td><font color="#ffffff" face="Arial, Helvetica, sans-serif" size="3"><b>System Health Diagnostic Center</b></font></td>
+            </tr>
+            <tr>
+              <td>
+                <p><font face="Times New Roman, Georgia, serif" size="3">Click the button below to execute diagnostics on the backend socket. This submits a standard HTTP GET form request, routing directly to the `/health` endpoint output.</font></p>
+                <!-- Standard HTML Form GET redirect -->
+                <form action="/health" method="GET">
+                  <input type="submit" value="Run Socket Diagnostic Check">
+                </form>
+              </td>
+            </tr>
+          </table>
+
+        </td>
+      </tr>
+    </table>
+  </center>
+
+  <hr size="3" width="90%" color="#808080">
+
+  <center>
+    <font face="Times New Roman, Georgia, serif" size="2">
+      Carzonrent Pvt Ltd &copy; 2026 DevOps Engineering Division. All rights reserved.<br>
+      Optimized for Netscape Navigator 4.0 and Microsoft Internet Explorer 5.0.
+    </font>
+  </center>
+
+  <br>
+
+</body>
+</html>
