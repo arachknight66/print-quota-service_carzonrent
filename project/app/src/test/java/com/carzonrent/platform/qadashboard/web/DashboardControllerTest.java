@@ -25,7 +25,7 @@ class DashboardControllerTest {
         mockMvc.perform(get("/").header("X-Forwarded-For", "127.0.0.1"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("dashboard"))
-                .andExpect(content().string(containsString("Carzonrent QA Platform")));
+                .andExpect(content().string(containsString("Legacy HTML Operations Page")));
     }
 
     @Test

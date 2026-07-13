@@ -2,71 +2,89 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Carzonrent enterprise QA deployment status dashboard">
-  <title>Carzonrent | QA Platform</title>
-  <link rel="stylesheet" th:href="@{/css/dashboard.css}" href="/css/dashboard.css">
+  <title>Carzonrent QA Deployment Status</title>
 </head>
 <body>
-  <header class="topbar">
-    <div class="brand">
-      <span class="brand-mark" aria-hidden="true">CZ</span>
-      <div><strong>Carzonrent</strong><span>Enterprise Platform Engineering</span></div>
-    </div>
-    <span class="environment">QA ENVIRONMENT</span>
-  </header>
+  <center>
+    <h1>Carzonrent QA Deployment Status</h1>
+    <h2>Legacy HTML Operations Page</h2>
+    <p>Spring Boot 3.3 on CentOS Stream 9 behind Apache HTTP Server.</p>
+  </center>
 
-  <main>
-    <section class="hero">
-      <div>
-        <p class="eyebrow">DEPLOYMENT CONTROL PLANE</p>
-        <h1>Carzonrent QA Platform</h1>
-        <p>Spring Boot 3.3 on CentOS Stream 9, protected by an Apache HTTP Server reverse proxy.</p>
-      </div>
-      <div class="deployment-state"><span class="pulse"></span><div><small>DEPLOYMENT STATUS</small><strong th:text="${info.deploymentStatus}">HEALTHY</strong></div></div>
-    </section>
+  <hr>
 
-    <section class="metrics" aria-label="Deployment metrics">
-      <article><span>Environment</span><strong th:text="${info.environment}">QA</strong></article>
-      <article><span>Apache Status</span><strong class="good" th:text="${info.apacheStatus}">RUNNING</strong></article>
-      <article><span>Reverse Proxy</span><strong class="good" th:text="${info.reverseProxyStatus}">ACTIVE</strong></article>
-      <article><span>Build Version</span><strong th:text="${info.buildVersion}">2.0.0</strong></article>
-    </section>
+  <table border="1" cellpadding="6" cellspacing="0" width="100%">
+    <caption><strong>Deployment Summary</strong></caption>
+    <tr>
+      <th align="left">Environment</th>
+      <td th:text="${info.environment}">QA</td>
+    </tr>
+    <tr>
+      <th align="left">Hostname</th>
+      <td th:text="${info.hostname}">qa.carzonrent</td>
+    </tr>
+    <tr>
+      <th align="left">Java Version</th>
+      <td th:text="${info.javaVersion}">21</td>
+    </tr>
+    <tr>
+      <th align="left">Spring Boot Version</th>
+      <td th:text="${info.springBootVersion}">3.3.x</td>
+    </tr>
+    <tr>
+      <th align="left">Apache Status</th>
+      <td th:text="${info.apacheStatus}">RUNNING</td>
+    </tr>
+    <tr>
+      <th align="left">Reverse Proxy Status</th>
+      <td th:text="${info.reverseProxyStatus}">ACTIVE</td>
+    </tr>
+    <tr>
+      <th align="left">Backend Address</th>
+      <td><code th:text="${info.backendAddress}">127.0.0.1:8085</code></td>
+    </tr>
+    <tr>
+      <th align="left">Deployment Status</th>
+      <td th:text="${info.deploymentStatus}">HEALTHY</td>
+    </tr>
+    <tr>
+      <th align="left">Current Time UTC</th>
+      <td th:text="${info.currentTime}">2026-07-13T00:00:00Z</td>
+    </tr>
+    <tr>
+      <th align="left">Build Version</th>
+      <td th:text="${info.buildVersion}">2.0.1</td>
+    </tr>
+    <tr>
+      <th align="left">Container Name</th>
+      <td th:text="${info.containerName}">qa.carzonrent</td>
+    </tr>
+    <tr>
+      <th align="left">Operating System</th>
+      <td th:text="${info.operatingSystem}">CentOS Stream 9</td>
+    </tr>
+  </table>
 
-    <div class="grid">
-      <section class="panel telemetry">
-        <div class="panel-heading"><div><p class="eyebrow">RUNTIME</p><h2>Platform telemetry</h2></div><span class="badge">LIVE</span></div>
-        <dl>
-          <div><dt>Hostname</dt><dd th:text="${info.hostname}">qa.carzonrent</dd></div>
-          <div><dt>Container Name</dt><dd th:text="${info.containerName}">qa.carzonrent</dd></div>
-          <div><dt>Operating System</dt><dd th:text="${info.operatingSystem}">CentOS Stream 9</dd></div>
-          <div><dt>Java Version</dt><dd th:text="${info.javaVersion}">21</dd></div>
-          <div><dt>Spring Boot Version</dt><dd th:text="${info.springBootVersion}">3.3.x</dd></div>
-          <div><dt>Backend Address</dt><dd><code th:text="${info.backendAddress}">127.0.0.1:8085</code></dd></div>
-          <div><dt>Current Time (UTC)</dt><dd th:text="${info.currentTime}">2026-07-13T00:00:00Z</dd></div>
-        </dl>
-      </section>
+  <h3>Service Endpoints</h3>
+  <ul>
+    <li><a href="/health">Health endpoint</a> - GET /health</li>
+    <li><a href="/info">Info endpoint</a> - GET /info</li>
+  </ul>
 
-      <aside class="panel endpoints">
-        <div class="panel-heading"><div><p class="eyebrow">OPERATIONS</p><h2>Service endpoints</h2></div></div>
-        <a href="/health"><div><strong>Health endpoint</strong><span>Readiness and liveness signal</span></div><code>GET /health</code></a>
-        <a href="/info"><div><strong>Info endpoint</strong><span>Runtime and deployment metadata</span></div><code>GET /info</code></a>
-        <p class="security-note"><strong>Backend isolation</strong><br>Port 8085 is bound to container loopback and is never published by Docker.</p>
-      </aside>
-    </div>
+  <h3>Reverse Proxy Architecture Diagram</h3>
+  <pre>
++----------------------+       +---------------------------+       +----------------------------+
+| Browser / QA User    | ----> | Apache HTTP Server :80    | ----> | Spring Boot 127.0.0.1:8085 |
+| qa.carzonrent.com    | HTTP  | Docker container gateway  | Proxy | Private backend only       |
++----------------------+       +---------------------------+       +----------------------------+
+  </pre>
 
-    <section class="panel architecture">
-      <div class="panel-heading"><div><p class="eyebrow">REQUEST LIFECYCLE</p><h2>Reverse proxy architecture</h2></div></div>
-      <div class="flow" role="img" aria-label="Browser to Docker port 80 to Apache to Spring Boot loopback port 8085">
-        <div class="node"><span>01</span><strong>Client</strong><small>qa.carzonrent.com:80</small></div>
-        <div class="arrow"><span>HTTP</span>→</div>
-        <div class="node accent"><span>02</span><strong>Apache HTTP Server</strong><small>Container port 80</small></div>
-        <div class="arrow"><span>ProxyPass</span>→</div>
-        <div class="node"><span>03</span><strong>Spring Boot</strong><small>127.0.0.1:8085</small></div>
-      </div>
-    </section>
-  </main>
+  <h3>Backend Isolation</h3>
+  <p>Spring Boot listens only on 127.0.0.1:8085 inside the container. Apache is the only public entry point.</p>
 
-  <footer>Carzonrent Platform Engineering · QA deployment · Build <span th:text="${info.buildVersion}">2.0.0</span></footer>
+  <hr>
+  <center>
+    <small>Carzonrent Platform Engineering - QA deployment - Build <span th:text="${info.buildVersion}">2.0.1</span></small>
+  </center>
 </body>
 </html>

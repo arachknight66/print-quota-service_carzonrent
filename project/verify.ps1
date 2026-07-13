@@ -1,9 +1,9 @@
 [CmdletBinding()]
 param(
     [string]$ContainerName = "qa.carzonrent",
-    [string]$FunctionalUrl = "http://127.0.0.1:8081",
+    [string]$FunctionalUrl = "http://127.0.0.1",
     [string]$PublicUrl = "http://qa.carzonrent.com",
-    [int]$ExpectedHostPort = 8081,
+    [int]$ExpectedHostPort = 80,
     [switch]$RequirePublicUrl
 )
 
@@ -28,7 +28,7 @@ function Get-HttpCode([string]$Url, [string[]]$Headers = @()) {
     & curl.exe @arguments 2>$null
 }
 
-Write-Host "Functional gateway: $FunctionalUrl (explicit non-privileged QA mapping)"
+Write-Host "Functional gateway: $FunctionalUrl"
 Write-Host "Required public URL: $PublicUrl"
 
 Test-Check "Docker container is running" { (docker inspect -f '{{.State.Running}}' $ContainerName) -eq "true" }
@@ -39,8 +39,8 @@ Test-Check "Backend port 8085 is not published" {
     (docker inspect -f '{{json .HostConfig.PortBindings}}' $ContainerName) -notmatch '8085/tcp'
 }
 Test-Check "Apache configuration syntax is valid" {
-    docker exec $ContainerName httpd -t 2>&1 | Out-Null
-    $LASTEXITCODE -eq 0
+    $output = docker exec $ContainerName sh -lc "httpd -t >/tmp/httpd-syntax.out 2>&1; echo `$?; cat /tmp/httpd-syntax.out"
+    (($output | Select-Object -First 1) -eq "0")
 }
 Test-Check "Required Apache modules are loaded" {
     $modules = (docker exec $ContainerName httpd -M 2>&1) -join "`n"
@@ -50,7 +50,7 @@ Test-Check "Required Apache modules are loaded" {
 }
 Test-Check "Spring Boot listens only on 127.0.0.1:8085" {
     $sockets = (docker exec $ContainerName ss -lntp) -join "`n"
-    ($sockets -match "127\.0\.0\.1:8085") -and
+    (($sockets -match "127\.0\.0\.1:8085") -or ($sockets -match "\[::ffff:127\.0\.0\.1\]:8085")) -and
         ($sockets -notmatch "0\.0\.0\.0:8085") -and ($sockets -notmatch "\[::\]:8085")
 }
 Test-Check "Spring Boot process is running" { ((docker top $ContainerName) -join "`n") -match 'qa-dashboard\.jar' }
@@ -66,16 +66,21 @@ Test-Check "Info reports QA and active reverse proxy" {
     ($info -match '"environment":"QA"') -and ($info -match '"reverseProxyStatus":"ACTIVE"')
 }
 Test-Check "CentOS Stream runtime is reported" { (curl.exe -sS "$FunctionalUrl/info") -match 'CentOS Stream 9' }
-Test-Check "Dashboard CSS is served and non-empty" {
-    $css = curl.exe -sS "$FunctionalUrl/css/dashboard.css"
-    ($LASTEXITCODE -eq 0) -and ($css -match ':root') -and ($css.Length -gt 500)
+Test-Check "Dashboard is pure HTML with no CSS or JavaScript references" {
+    $html = (curl.exe -sS "$FunctionalUrl/") | Out-String
+    ($LASTEXITCODE -eq 0) -and
+        ($html -notmatch '<link[^>]+stylesheet') -and
+        ($html -notmatch '<style') -and
+        ($html -notmatch '<script') -and
+        ($html -match '<table') -and
+        ($html -match 'Legacy HTML Operations Page')
 }
 Test-Check "Unknown route returns HTTP 404" { (Get-HttpCode "$FunctionalUrl/does-not-exist") -eq "404" }
 Test-Check "Backend marker proves Apache-to-Spring path" {
     ((curl.exe -sSI "$FunctionalUrl/") -join "`n") -match 'X-Carzonrent-Backend: qa-dashboard-springboot:8085'
 }
 Test-Check "Java 21 runtime is installed" {
-    $version = (docker exec $ContainerName java -version 2>&1) -join "`n"
+    $version = (docker exec $ContainerName sh -lc "java -version 2>&1") -join "`n"
     ($LASTEXITCODE -eq 0) -and ($version -match 'version "21')
 }
 

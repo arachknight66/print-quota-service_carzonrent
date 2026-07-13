@@ -3,6 +3,9 @@ FROM quay.io/centos/centos:stream9 AS build
 RUN dnf -y install --setopt=install_weak_deps=False java-21-openjdk-devel maven && \
     dnf clean all && rm -rf /var/cache/dnf
 
+ENV JAVA_HOME=/usr/lib/jvm/java-21-openjdk \
+    PATH="/usr/lib/jvm/java-21-openjdk/bin:${PATH}"
+
 WORKDIR /workspace
 COPY app/pom.xml ./pom.xml
 RUN mvn -B -ntp dependency:go-offline
@@ -14,7 +17,7 @@ FROM quay.io/centos/centos:stream9
 LABEL org.opencontainers.image.title="Carzonrent Spring Boot QA Environment" \
       org.opencontainers.image.description="CentOS Stream 9 Apache reverse proxy with Spring Boot QA dashboard" \
       org.opencontainers.image.vendor="Carzonrent Pvt Ltd" \
-      org.opencontainers.image.version="2.0.0" \
+      org.opencontainers.image.version="2.0.1" \
       org.opencontainers.image.source="Printkeep/project" \
       environment="qa"
 

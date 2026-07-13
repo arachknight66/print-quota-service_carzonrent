@@ -68,7 +68,9 @@ public class DashboardController {
     }
 
     private InfoResponse buildInfoResponse(HttpServletRequest request) {
-        boolean proxied = request.getHeader("X-Forwarded-For") != null;
+        boolean proxied = request.getHeader("X-Forwarded-For") != null
+                || request.getHeader("X-Forwarded-Proto") != null
+                || request.getHeader("X-Forwarded-Port") != null;
         return new InfoResponse(
                 "QA",
                 resolveHostname(),
