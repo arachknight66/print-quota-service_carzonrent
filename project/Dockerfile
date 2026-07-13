@@ -1,35 +1,43 @@
-# ==============================================================================
-# Dockerfile for Carzonrent Quality Assurance (QA) Environment
-# Base Image: CentOS Stream 9
-# Description: Local simulated QA web server environment hosting Apache HTTP Server.
-# ==============================================================================
-
-# Use official CentOS Stream 9 base image
 FROM quay.io/centos/centos:stream9
 
-# Metadata Labels
-LABEL maintainer="DevOps Engineering Team <devops@carzonrent.com>" \
-      environment="QA" \
-      project="Carzonrent Web Infrastructure" \
-      version="1.0.0"
+LABEL org.opencontainers.image.title="Carzonrent QA Environment" \
+      org.opencontainers.image.description="CentOS Stream 9 Apache reverse proxy with a local QA backend" \
+      org.opencontainers.image.vendor="Carzonrent Pvt Ltd" \
+      org.opencontainers.image.version="1.0.0" \
+      environment="qa"
 
-# Update packages and install Apache HTTP Server and required utility packages
-RUN dnf -y update && \
-    dnf -y install --allowerasing \
+ARG BUILD_VERSION=1.0.0
+ENV BUILD_VERSION=${BUILD_VERSION} \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+RUN dnf -y install --allowerasing --setopt=install_weak_deps=False \
         httpd \
+        mod_ssl \
         curl \
+        vim \
         iproute \
         iputils \
-        vim \
-        net-tools && \
-    dnf clean all
+        net-tools \
+        python3 && \
+    dnf clean all && \
+    rm -rf /var/cache/dnf \
+        /etc/httpd/conf.d/autoindex.conf \
+        /etc/httpd/conf.d/welcome.conf \
+        /etc/httpd/conf.d/ssl.conf
 
-# Copy website files (HTML and CSS) to Apache document root
-COPY index.html /var/www/html/
-COPY style.css /var/www/html/
+COPY apache/qa.carzonrent.conf /etc/httpd/conf.d/qa.carzonrent.conf
+COPY backend/ /opt/carzonrent/backend/
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
-# Expose web service port
+RUN chmod 0755 /usr/local/bin/docker-entrypoint.sh /opt/carzonrent/backend/server.py && \
+    chown -R apache:apache /opt/carzonrent
+
 EXPOSE 80
 
-# Run Apache HTTP Server in the foreground to keep the container active
-CMD ["/usr/sbin/httpd", "-DFOREGROUND"]
+HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=3 \
+    CMD curl --fail --silent --show-error http://127.0.0.1/health >/dev/null && \
+        curl --fail --silent --show-error http://127.0.0.1:8085/health >/dev/null || exit 1
+
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+CMD ["/usr/sbin/httpd","-DFOREGROUND"]

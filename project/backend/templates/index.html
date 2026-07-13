@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Carzonrent enterprise QA environment status dashboard">
+  <title>Carzonrent | QA Environment</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="Carzonrent QA home">
+      <span class="brand-mark">C</span>
+      <span><strong>Carzonrent</strong><small>Engineering Platform</small></span>
+    </a>
+    <span class="environment-pill"><i></i> QA Environment</span>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div>
+        <p class="eyebrow">Infrastructure control plane</p>
+        <h1>Quality Assurance<br><span>Environment</span></h1>
+        <p class="intro">Production-aligned validation gateway for Carzonrent services, running through an Apache reverse-proxy tier.</p>
+      </div>
+      <div class="deployment-state">
+        <span class="pulse"></span>
+        <div><small>Deployment status</small><strong>Operational</strong></div>
+      </div>
+    </section>
+
+    <section class="status-panel" aria-labelledby="status-title">
+      <div class="panel-heading">
+        <div><p class="eyebrow">Live service telemetry</p><h2 id="status-title">Environment status</h2></div>
+        <span class="last-check">Current Time · {{CURRENT_TIME}}</span>
+      </div>
+
+      <div class="metric-grid">
+        <article><span class="icon">HN</span><p>Hostname</p><strong>{{HOSTNAME}}</strong><small>Internal service identity</small></article>
+        <article><span class="icon">OS</span><p>Operating System</p><strong>CentOS Stream 9</strong><small>Enterprise Linux platform</small></article>
+        <article><span class="icon">AP</span><p>Apache Status</p><strong class="ok">Running</strong><small>HTTP Server foreground process</small></article>
+        <article><span class="icon">PX</span><p>Reverse Proxy</p><strong class="ok">Enabled</strong><small>HTTP proxy module active</small></article>
+        <article><span class="icon">PT</span><p>Backend Port</p><strong>127.0.0.1:8085</strong><small>Loopback-only application endpoint</small></article>
+        <article><span class="icon">CT</span><p>Container Name</p><strong>qa.carzonrent</strong><small>Docker runtime identity</small></article>
+        <article><span class="icon">DP</span><p>Deployment Status</p><strong class="ok">Healthy</strong><small>Proxy and backend available</small></article>
+        <article><span class="icon">BV</span><p>Build Version</p><strong>{{BUILD_VERSION}}</strong><small>QA release artifact</small></article>
+      </div>
+    </section>
+  </main>
+
+  <footer><span>Carzonrent Pvt Ltd</span><span>DevOps Engineering</span></footer>
+</body>
+</html>
