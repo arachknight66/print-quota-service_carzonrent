@@ -1,7 +1,7 @@
 #!/usr/bin/bash
 set -Eeuo pipefail
 
-java ${JAVA_OPTS:-} -jar /opt/carzonrent/runtime/qa-dashboard.jar &
+runuser -u apache -- java ${JAVA_OPTS:-} -jar /opt/carzonrent/runtime/qa-dashboard.jar &
 spring_pid=$!
 
 cleanup() {

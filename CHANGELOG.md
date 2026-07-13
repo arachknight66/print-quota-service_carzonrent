@@ -1,14 +1,150 @@
-# Implementation Roadmap & Production Blueprint: Print Quota Management System
+# Project History, Roadmap & Milestones
+
+This document records the development history, release details, milestones, and the strategic roadmap of the Print Quota Management System.
+
+---
+
+## Section: Roadmap
+
+Source file: [ROADMAP.md](CHANGELOG.md)
+
+
+## Project Status & Roadmap
+
+This document outlines the current project maturity, completed phases, identified technical debt, and next milestones.
+
+---
+
+### 1. Completed Milestones
+
+#### Phase 1: Enterprise Foundation
+- Established multi-module Maven design.
+- Enforced PMD, SpotBugs, Checkstyle compiler validations.
+- Configured Jetty server thread pool limits.
+
+#### Phase 2: Persistence Layer
+- Mapped JPA entities (`User`, `Quota`, `PrintLog`) with audits.
+- Implemented database migrations via Liquibase.
+- Setup optimistic and pessimistic locks.
+
+#### Phase 3: Identity Integration
+- Built LDAP/Active Directory synchronization schedulers.
+- Configured Caffeine cache lookup buffers.
+
+#### Phase 4: Docker & IPP Codec
+- Multi-stage CentOS Stream 9 container compilation.
+- Standalone `ipp-codec` binary parser and encoder.
+
+#### Phase 5: Print Processing Engine
+- Built Chain of Responsibility evaluation stages.
+- Implemented transactional quota deductions and metrics logging.
+
+#### Phase 6: Print Job Routing & Proxy
+- Implemented HTTP/HTTPS transparent IPP proxy interceptor.
+- Built configuration-driven printer routing map with failover rules.
+- Streams multi-format documents (PDF, PCL, PS) in constant 8KB buffer memory space to prevent OOM errors.
+- Integrates with the validation pipeline and returns RFC 8011 status codes (e.g., 0x0401) on rejections.
+
+#### Phase 7: Reporting, Dashboard & Administration
+- Integrated reporting endpoints for CSV/Excel data streams.
+- Implemented SXSSFWorkbook high-performance streaming Excel builder.
+- Built dashboard aggregation for user metrics and operational statistics.
+- Added scheduled crons for monthly quota resets, daily summaries, and cleanup.
+
+#### Phase 8: Production Hardening & RC Preparation
+- Enforced OWASP recommended HTTP security headers via servlet filters.
+- Added CycloneDX plugin generating Software Bill of Materials (SBOM) for compliance.
+- Wrote PowerShell backup/restore utilities for Postgres databases and certificates.
+- Documented performance tuning, incident response guidelines, and security checks.
+
+---
+
+### 2. Next Milestones
+
+#### Phase 9: Clustering & Distributed Lock Management (Planned)
+- Implement Hazelcast or Redis distributed locking to coordinate multiple proxy nodes.
+- Introduce centralized rate-limiting for proxy traffic.
+
+---
+
+### 3. Technical Debt & Known Limitations
+
+- **AD Sync Lockups**: LDAP directory listings use paged search results. Large user sets (10,000+) can block execution threads if the connection pool is saturated.
+- **Transactional Latency**: Under extremely high concurrent print volume (100+ requests/sec for the same user), the pessimistic write lock on the `quotas` table row will serialize requests, causing short wait latencies.
+- **Single Point of Failure**: Active Directory connectivity checks are monitored in Actuator readiness groups. If AD drops, the readiness probe fails, marking the container offline even though local cached users can still print. A cached verification fallback is planned.
+
+
+---
+
+## Section: Release Notes
+
+Source file: [RELEASE_NOTES.md](CHANGELOG.md)
+
+
+## Version 1.0 Release Notes (General Availability)
+
+This document contains the release notes, changelog, migration steps, and known limitations for Version 1.0 GA of the Print Quota Management System.
+
+---
+
+### 1. Executive Summary
+
+Version 1.0 GA establishes a production-grade Print Quota Management System and IPP Proxy. The system secures print routing, synchronizes directory structures, calculates monthly allocations under strict concurrency controls, and provides dashboards and Excel exports.
+
+---
+
+### 2. Changelog & Milestones
+
+- **Phase 1-3 (Foundation & Identity)**: Built core Spring Boot configuration, configured PostgreSQL schema migrations via Liquibase, and added Active Directory LDAP synchronization.
+- **Phase 4-5 (Codec & Engines)**: Added low-level RFC 8010 binary parsing module (`ipp-codec`) and validation pipelines.
+- **Phase 6 (IPP Proxy)**: Introduced transparent streaming IPP proxy, connection pooling, and target printer routing.
+- **Phase 7 (Reporting & Admin)**: Integrated SXSSFWorkbook streaming Excel exporters, daily mail alerts, and versioned admin REST APIs.
+- **Phase 8 (Production Hardening)**: Hardened container privileges, added CycloneDX SBOM configurations, and wrote PowerShell backup scripts.
+
+---
+
+### 3. Migration Guide
+
+To upgrade from development/beta setups to V1.0 GA:
+1. **Apply Liquibase Schema Updates**: Migrations execute automatically during container start. Alternatively, run:
+```bash
+./mvnw liquibase:update -pl print-quota-core
+```
+2. **Import SSL Certificates**: Place active TLS certificate files in `./docker/certs` to enable secure print proxy communications.
+3. **Seed Database Default Quotas**: Run a manual sync to pull current employees and seed default quotas:
+```bash
+curl -X POST http://localhost:8080/api/v1/admin/sync
+```
+
+---
+
+### 4. Known Issues & Future Roadmap
+
+- **Known Issues**:
+  - Direct print job cancel operations are validated but forwarding cancellation streams are not optimized yet.
+- **Future Roadmap (v2.0)**:
+  - Centralized distributed lock management using Redis or Hazelcast.
+  - Multi-node clustering configurations.
+
+
+---
+
+## Section: Implementation Plan
+
+Source file: [implementation_plan.md](CHANGELOG.md)
+
+
+## Implementation Roadmap & Production Blueprint: Print Quota Management System
 
 This document outlines the exhaustive, production-grade implementation roadmap for deploying the Print Quota Management System. It addresses all correctness, reliability, security, and scalability issues identified in the architectural review.
 
 ---
 
-## Part 1: Strategic Progression & Justification
+### Part 1: Strategic Progression & Justification
 
 To ensure a successful deployment, the roadmap is structured into **ten distinct phases**. Correctness and security infrastructure are built *before* exposing the system to network traffic or business rules.
 
-### Alignment Rationale
+#### Alignment Rationale
 1. **Foundation & Build (Phase 1)** establishes compilation standards, multi-module encapsulation, security dependency auditing, and CI pipeline checks.
 2. **Database Schema (Phase 2)** builds the transactional storage engine using migrations (Flyway) and sets up database connection configurations.
 3. **Active Directory (Phase 3)** sets up LDAPS querying outside of database transactions.
@@ -22,13 +158,13 @@ To ensure a successful deployment, the roadmap is structured into **ten distinct
 
 ---
 
-## Part 2: Detailed Phase Blueprints
+### Part 2: Detailed Phase Blueprints
 
 ---
 
-### Phase 1: Project Foundation & Build Infrastructure
+#### Phase 1: Project Foundation & Build Infrastructure
 
-#### Section 1: Standard Phase Metadata
+##### Section 1: Standard Phase Metadata
 * **1. Phase Number:** 1
 * **2. Phase Name:** Project Foundation & Build Infrastructure
 * **3. Objective:** Establish the Maven multi-module project structure, configure Jetty as the web server, define the Logback rolling file structure, set up the initial Jenkins pipeline, and configure basic health indicators.
@@ -44,7 +180,7 @@ To ensure a successful deployment, the roadmap is structured into **ten distinct
   * Manual build failures.
 * **8. Dependencies:** None.
 
-#### Section 2: Technical Specifications & Structures
+##### Section 2: Technical Specifications & Structures
 * **9. Deliverables:** 
   * Parent POM and child POMs (`print-quota-core`, `ipp-codec`).
   * `logback-spring.xml` containing the 5GB maximum log capacity policy.
@@ -111,7 +247,7 @@ To ensure a successful deployment, the roadmap is structured into **ten distinct
 * **39. Future Extensibility:** Standardized profiles make it easy to migrate properties to Spring Cloud Config later.
 * **40. Documentation Required:** System bootstrap manual and logging folder structure guidelines (1 page).
 
-#### Section 3: Learning Objectives & Resources
+##### Section 3: Learning Objectives & Resources
 * **Learning Objectives:** Mastering Maven multi-module dependency orchestration and Logback configurations.
 * **Concepts to Master:** Maven dependency exclusions, Jetty thread configuration, and Logback rolling policies.
 * **Enterprise Java Concepts:** Classloader separation, enforcer rule configurations, and JVM garbage collector options.
@@ -127,9 +263,9 @@ To ensure a successful deployment, the roadmap is structured into **ten distinct
 
 ---
 
-### Phase 2: Relational Database Architecture
+#### Phase 2: Relational Database Architecture
 
-#### Section 1: Standard Phase Metadata
+##### Section 1: Standard Phase Metadata
 * **1. Phase Number:** 2
 * **2. Phase Name:** Relational Database Architecture
 * **3. Objective:** Establish the PostgreSQL relational schema using database migration tools, map database relationships with JPA/Hibernate entities, and configure transactional database connection pools.
@@ -145,7 +281,7 @@ To ensure a successful deployment, the roadmap is structured into **ten distinct
   * Schema divergence between local and staging servers.
 * **8. Dependencies:** Phase 1 complete.
 
-#### Section 2: Technical Specifications & Structures
+##### Section 2: Technical Specifications & Structures
 * **9. Deliverables:** 
   * Liquibase changelog files (`db.changelog-master.yaml`, `001-init-schema.sql`).
   * JPA Entity classes (`User`, `Quota`, `PrintLog`).
@@ -211,7 +347,7 @@ To ensure a successful deployment, the roadmap is structured into **ten distinct
 * **39. Future Extensibility:** Add temporal auditing tables using Hibernate Envers if requirements change later.
 * **40. Documentation Required:** Liquibase migration layout documentation and database schema entity-relationship diagrams (2 pages).
 
-#### Section 3: Learning Objectives & Resources
+##### Section 3: Learning Objectives & Resources
 * **Learning Objectives:** Learn Liquibase schema design, connection pooling parameters, and JPA relationship fetching patterns.
 * **Concepts to Master:** Database migration patterns, JPA entity lifecycles, and HikariCP connection pool configurations.
 * **Enterprise Java Concepts:** Hibernate session management, L2 cache structures, and transactional isolation layers.
@@ -227,9 +363,9 @@ To ensure a successful deployment, the roadmap is structured into **ten distinct
 
 ---
 
-### Phase 3: Active Directory (LDAPS) Integration & Auto-Provisioning
+#### Phase 3: Active Directory (LDAPS) Integration & Auto-Provisioning
 
-#### Section 1: Standard Phase Metadata
+##### Section 1: Standard Phase Metadata
 * **1. Phase Number:** 3
 * **2. Phase Name:** Active Directory (LDAPS) Integration & Auto-Provisioning
 * **3. Objective:** Configure the Spring LDAP client, implement the department lookup query, and build user auto-provisioning services.
@@ -246,7 +382,7 @@ To ensure a successful deployment, the roadmap is structured into **ten distinct
   * Missing user print jobs.
 * **8. Dependencies:** Phases 1 & 2 complete.
 
-#### Section 2: Technical Specifications & Structures
+##### Section 2: Technical Specifications & Structures
 * **9. Deliverables:** 
   * `LdapService.java` implementation.
   * `LdapConfig.java` configuration class.
@@ -301,7 +437,7 @@ To ensure a successful deployment, the roadmap is structured into **ten distinct
 * **39. Future Extensibility:** Add sync capabilities to update local department names if user attributes change in AD.
 * **40. Documentation Required:** AD certificate configurations and directory schema mapping details (2 pages).
 
-#### Section 3: Learning Objectives & Resources
+##### Section 3: Learning Objectives & Resources
 * **Learning Objectives:** Mastering LDAP query constructions and understanding referral structures and JNDI connection parameters.
 * **Concepts to Master:** LDAP structures, LDAPS truststore requirements, and referral configurations.
 * **Enterprise Java Concepts:** JNDI architectures, SSLContext trust managers, and network socket timeout configurations.
@@ -317,9 +453,9 @@ To ensure a successful deployment, the roadmap is structured into **ten distinct
 
 ---
 
-### Phase 4: IPP Parser Codec & Input Validation
+#### Phase 4: IPP Parser Codec & Input Validation
 
-#### Section 1: Standard Phase Metadata
+##### Section 1: Standard Phase Metadata
 * **1. Phase Number:** 4
 * **2. Phase Name:** IPP Parser Codec & Input Validation
 * **3. Objective:** Develop the binary IPP parser module, implement packet validations, and protect the application from buffer overflow attacks.
@@ -336,7 +472,7 @@ To ensure a successful deployment, the roadmap is structured into **ten distinct
   * Null pointer errors in parsing logic.
 * **8. Dependencies:** Phases 1 to 3 complete.
 
-#### Section 2: Technical Specifications & Structures
+##### Section 2: Technical Specifications & Structures
 * **9. Deliverables:** 
   * `ipp-codec` Maven sub-module containing parser tools.
   * IPP response serialization classes.
@@ -391,7 +527,7 @@ To ensure a successful deployment, the roadmap is structured into **ten distinct
 * **39. Future Extensibility:** Enable support for additional IPP operations (e.g., query jobs or cancel jobs) without changing parser structures.
 * **40. Documentation Required:** IPP binary mapping specification and validation rules document (3 pages).
 
-#### Section 3: Learning Objectives & Resources
+##### Section 3: Learning Objectives & Resources
 * **Learning Objectives:** Understand RFC-compliant binary encoding structures and develop safe data stream parsers.
 * **Concepts to Master:** IPP (RFC 8010/8011) protocols, binary parsing strategies, and input sanitization.
 * **Enterprise Java Concepts:** ByteBuffer memory allocations and byte serialization methods.
@@ -407,9 +543,9 @@ To ensure a successful deployment, the roadmap is structured into **ten distinct
 
 ---
 
-### Phase 5: Transactional Quota Engine
+#### Phase 5: Transactional Quota Engine
 
-#### Section 1: Standard Phase Metadata
+##### Section 1: Standard Phase Metadata
 * **1. Phase Number:** 5
 * **2. Phase Name:** Transactional Quota Engine
 * **3. Objective:** Implement the quota verification rules, duplex page cost calculation logic, and lock down concurrent quota updates using database pessimistic locking.
@@ -426,7 +562,7 @@ To ensure a successful deployment, the roadmap is structured into **ten distinct
   * Transaction deadlocks on the database.
 * **8. Dependencies:** Phases 1 to 4 complete.
 
-#### Section 2: Technical Specifications & Structures
+##### Section 2: Technical Specifications & Structures
 * **9. Deliverables:** 
   * `PrintQuotaService.java` implementation.
   * Transactional rollback structures.
@@ -480,7 +616,7 @@ To ensure a successful deployment, the roadmap is structured into **ten distinct
 * **39. Future Extensibility:** Implement support for department-wide shared quotas or custom roll-forward policies.
 * **40. Documentation Required:** Quota deduction transaction flows and locking strategy documentation (2 pages).
 
-#### Section 3: Learning Objectives & Resources
+##### Section 3: Learning Objectives & Resources
 * **Learning Objectives:** Mastering Spring database transaction boundaries and implementing pessimistic database locking schemas.
 * **Concepts to Master:** Pessimistic locking strategies, transaction isolation properties, and ACID rules.
 * **Enterprise Java Concepts:** Hibernate isolation configurations and JDBC lock timeouts.
@@ -496,9 +632,9 @@ To ensure a successful deployment, the roadmap is structured into **ten distinct
 
 ---
 
-### Phase 6: Printing Forwarder & Disk Spooler
+#### Phase 6: Printing Forwarder & Disk Spooler
 
-#### Section 1: Standard Phase Metadata
+##### Section 1: Standard Phase Metadata
 * **1. Phase Number:** 6
 * **2. Phase Name:** Printing Forwarder & Disk Spooler
 * **3. Objective:** Build disk spooling utilities to handle print payloads safely, configure the downstream SSL connection, and implement compensating transactions to refund quotas if forwarding fails.
@@ -515,7 +651,7 @@ To ensure a successful deployment, the roadmap is structured into **ten distinct
   * Over-charging users for print jobs that fail to transmit.
 * **8. Dependencies:** Phases 1 to 5 complete.
 
-#### Section 2: Technical Specifications & Structures
+##### Section 2: Technical Specifications & Structures
 * **9. Deliverables:** 
   * `SpoolService.java` implementation.
   * `PrintForwarderService.java` implementation.
@@ -575,7 +711,7 @@ To ensure a successful deployment, the roadmap is structured into **ten distinct
 * **39. Future Extensibility:** Add print spool queueing and auto-retry capabilities for temporary printer failures.
 * **40. Documentation Required:** Downstream printing configuration guide and compensating transaction specs (3 pages).
 
-#### Section 3: Learning Objectives & Resources
+##### Section 3: Learning Objectives & Resources
 * **Learning Objectives:** Mastering Java I/O stream piping, configuring SSL contexts with custom KeyStores/TrustStores, and designing compensating database transactions.
 * **Concepts to Master:** Network stream forwarding, SSL trust manager configurations, and compensating transaction patterns.
 * **Enterprise Java Concepts:** Socket communication, SSL handshake structures, and stream flow behaviors.
@@ -591,9 +727,9 @@ To ensure a successful deployment, the roadmap is structured into **ten distinct
 
 ---
 
-### Phase 7: Reporting, Excel, & Email Subsystem
+#### Phase 7: Reporting, Excel, & Email Subsystem
 
-#### Section 1: Standard Phase Metadata
+##### Section 1: Standard Phase Metadata
 * **1. Phase Number:** 7
 * **2. Phase Name:** Reporting, Excel, & Email Subsystem
 * **3. Objective:** Implement monthly quota rollovers, build memory-efficient Excel reports, and configure the automated email dispatch service.
@@ -610,7 +746,7 @@ To ensure a successful deployment, the roadmap is structured into **ten distinct
   * SMTP connection failures blocking database rollover tasks.
 * **8. Dependencies:** Phases 1 to 6 complete.
 
-#### Section 2: Technical Specifications & Structures
+##### Section 2: Technical Specifications & Structures
 * **9. Deliverables:** 
   * `ReportService.java` implementation.
   * `ReportScheduler.java` class.
@@ -666,7 +802,7 @@ To ensure a successful deployment, the roadmap is structured into **ten distinct
 * **39. Future Extensibility:** Add support for PDF report generation or customizable schedules.
 * **40. Documentation Required:** Reporting guides and mail configuration specs (2 pages).
 
-#### Section 3: Learning Objectives & Resources
+##### Section 3: Learning Objectives & Resources
 * **Learning Objectives:** Mastering memory-optimized document compilation using Apache POI, and managing Spring scheduler configurations.
 * **Concepts to Master:** Streaming spreadsheet generation, asynchronous email delivery, and cron scheduling configurations.
 * **Enterprise Java Concepts:** JavaMail MIME structures and POI workbook models.
@@ -682,9 +818,9 @@ To ensure a successful deployment, the roadmap is structured into **ten distinct
 
 ---
 
-### Phase 8: Security Hardening & Authentication Gate
+#### Phase 8: Security Hardening & Authentication Gate
 
-#### Section 1: Standard Phase Metadata
+##### Section 1: Standard Phase Metadata
 * **1. Phase Number:** 8
 * **2. Phase Name:** Security Hardening & Authentication Gate
 * **3. Objective:** Enforce Mutual TLS (mTLS) for Jetty connections, implement client authentication checks, encrypt application secrets, and sanitize error responses.
@@ -702,7 +838,7 @@ To ensure a successful deployment, the roadmap is structured into **ten distinct
   * Information leakage in stack traces.
 * **8. Dependencies:** Phases 1 to 7 complete.
 
-#### Section 2: Technical Specifications & Structures
+##### Section 2: Technical Specifications & Structures
 * **9. Deliverables:** 
   * Configured keystores and truststores.
   * Custom `mTLS` filter wrapper for user mapping.
@@ -752,7 +888,7 @@ To ensure a successful deployment, the roadmap is structured into **ten distinct
 * **39. Future Extensibility:** Add support for Active Directory validation checks during certificate evaluations.
 * **40. Documentation Required:** PKI manual and keystore management guidelines (3 pages).
 
-#### Section 3: Learning Objectives & Resources
+##### Section 3: Learning Objectives & Resources
 * **Learning Objectives:** Mastering PKI principles, establishing client certificate parsing filters, and securing configuration parameters using Jasypt or AES.
 * **Concepts to Master:** Public Key Infrastructure (PKI) concepts, mTLS handshake processes, and cryptography patterns.
 * **Enterprise Java Concepts:** JSSE SSL engines, trust managers, and cipher configuration rules.
@@ -768,9 +904,9 @@ To ensure a successful deployment, the roadmap is structured into **ten distinct
 
 ---
 
-### Phase 9: Reliability, Self-Healing, & Monitoring
+#### Phase 9: Reliability, Self-Healing, & Monitoring
 
-#### Section 1: Standard Phase Metadata
+##### Section 1: Standard Phase Metadata
 * **1. Phase Number:** 9
 * **2. Phase Name:** Reliability, Self-Healing, & Monitoring
 * **3. Objective:** Implement startup cleanup hooks for temporary files, set up Spring Actuator health monitoring metrics, configure MDC context tracing, and build system alerts.
@@ -788,7 +924,7 @@ To ensure a successful deployment, the roadmap is structured into **ten distinct
   * Debugging difficulties due to untraced logs.
 * **8. Dependencies:** Phases 1 to 8 complete.
 
-#### Section 2: Technical Specifications & Structures
+##### Section 2: Technical Specifications & Structures
 * **9. Deliverables:** 
   * `MdcInterceptor.java` logger utility.
   * `StartupCleanupHook.java` utility.
@@ -840,7 +976,7 @@ To ensure a successful deployment, the roadmap is structured into **ten distinct
 * **39. Future Extensibility:** Add support for distributed tracing systems (e.g., OpenTelemetry).
 * **40. Documentation Required:** Operational Runbook and Alerting configuration guide (3 pages).
 
-#### Section 3: Learning Objectives & Resources
+##### Section 3: Learning Objectives & Resources
 * **Learning Objectives:** Mastering Spring Boot Actuator configurations, integrating Prometheus metrics, and configuring MDC context keys in Logback.
 * **Concepts to Master:** MDC logging mechanisms, Prometheus metric specifications, and cleanup strategies.
 * **Enterprise Java Concepts:** ThreadLocal memory usage and file I/O operations.
@@ -856,9 +992,9 @@ To ensure a successful deployment, the roadmap is structured into **ten distinct
 
 ---
 
-### Phase 10: Production Readiness & Deployment
+#### Phase 10: Production Readiness & Deployment
 
-#### Section 1: Standard Phase Metadata
+##### Section 1: Standard Phase Metadata
 * **1. Phase Number:** 10
 * **2. Phase Name:** Production Readiness & Deployment
 * **3. Objective:** Configure the systemd service descriptor, apply capability constraints for binding port 443 as a non-root user, finalize Jenkins pipeline automations, and create disaster recovery plans.
@@ -876,7 +1012,7 @@ To ensure a successful deployment, the roadmap is structured into **ten distinct
   * Long recovery delays during server crashes.
 * **8. Dependencies:** Phases 1 to 9 complete.
 
-#### Section 2: Technical Specifications & Structures
+##### Section 2: Technical Specifications & Structures
 * **9. Deliverables:** 
   * `print-quota.service` systemd configuration file.
   * Declarative deployment script files.
@@ -927,7 +1063,7 @@ To ensure a successful deployment, the roadmap is structured into **ten distinct
 * **39. Future Extensibility:** Add support for running the application in containerized environments (e.g., Docker).
 * **40. Documentation Required:** Operational Runbook and Disaster Recovery procedures (5 pages).
 
-#### Section 3: Learning Objectives & Resources
+##### Section 3: Learning Objectives & Resources
 * **Learning Objectives:** Mastering systemd service configuration rules, configuring system-level capabilities (`CAP_NET_BIND_SERVICE`), and structuring declarative Jenkins pipelines.
 * **Concepts to Master:** Linux systemd configurations, OS ambient capabilities, and automated build pipelines.
 * **Enterprise Java Concepts:** JVM initialization options and garbage collection logging.
@@ -943,9 +1079,9 @@ To ensure a successful deployment, the roadmap is structured into **ten distinct
 
 ---
 
-## Part 3: Roadmap Timeline & Verification Plan
+### Part 3: Roadmap Timeline & Verification Plan
 
-### 1. Gantt Timeline Specification
+#### 1. Gantt Timeline Specification
 
 The Gantt timeline below details the estimated schedule for the 10-phase implementation plan, based on a single senior engineer working full-time.
 
@@ -968,7 +1104,7 @@ Total Implementation Window: 14 Weeks
 
 ---
 
-### 2. Dependency Graph
+#### 2. Dependency Graph
 
 This diagram shows the execution flow and dependencies between the development phases.
 
@@ -987,7 +1123,7 @@ graph TD
 
 ---
 
-### 3. Critical Path Analysis
+#### 3. Critical Path Analysis
 
 The critical path spans all ten phases. Because the output of each phase directly affects the next, the project cannot be fast-tracked by skipping steps.
 
@@ -1009,7 +1145,7 @@ CRITICAL PATH TRANSITIONS
 
 ---
 
-### 4. Consolidated Risk Matrix
+#### 4. Consolidated Risk Matrix
 
 | Phase | Risk ID | Description | Severity | Probability | Mitigation Strategy |
 | :--- | :--- | :--- | :---: | :---: | :--- |
@@ -1026,30 +1162,30 @@ CRITICAL PATH TRANSITIONS
 
 ---
 
-### 5. Git Branching & Commit Strategy
+#### 5. Git Branching & Commit Strategy
 
-#### Git Flow Model
+##### Git Flow Model
 * **`main`:** Production-ready code. Commits are only merged via pull requests from `develop`.
 * **`develop`:** Integration branch. All features and phases are merged here.
 * **`feature/phase-[N]`:** Phase-specific development branches. Created from `develop` and merged back after code reviews.
 
-#### Commit Message Conventions
+##### Commit Message Conventions
 Use the Conventional Commits format to ensure readable histories:
 * `feat(core): ...` for new features.
 * `fix(codec): ...` for bug fixes.
 * `test(quota): ...` for adding tests.
 * `docs(readme): ...` for documentation updates.
 
-#### Code Review Guidelines
+##### Code Review Guidelines
 * All pull requests must target `develop`.
 * Require at least two approvals from senior team members before merging.
 * Merges to `main` must trigger automated builds and test runs on Jenkins.
 
 ---
 
-### 6. Verification & Go-Live Checklists
+#### 6. Verification & Go-Live Checklists
 
-#### 1. Testing Strategy Summary
+##### 1. Testing Strategy Summary
 * **Unit Tests:** Enforce a minimum of 80% code coverage. Validate parser, quota, and reporting modules in isolation.
 * **Integration Tests:** Use Testcontainers to run tests against real PostgreSQL database containers.
 * **Stress Tests:** Simulate concurrent requests from 50+ threads using mock environments to verify lock behavior.
@@ -1060,7 +1196,7 @@ Use the Conventional Commits format to ensure readable histories:
 | **System** | End-to-end spooling & forwarding | Mock target printer | MockServer |
 | **Stress** | Concurrent quota check requests | Concurrency locking | ThreadPoolExecutors |
 
-#### 2. Production Deployment Checklist
+##### 2. Production Deployment Checklist
 - [ ] Create unprivileged `printquota` user on the target CentOS VM.
 - [ ] Create `/var/spool/print-quota` and configure directory permissions.
 - [ ] Create `/var/log/print-quota` and configure directory permissions.
@@ -1069,7 +1205,7 @@ Use the Conventional Commits format to ensure readable histories:
 - [ ] Install the systemd configuration file to `/etc/systemd/system/`.
 - [ ] Reload the systemd daemon configurations.
 
-#### 3. Go-Live Verification Tasks
+##### 3. Go-Live Verification Tasks
 - [ ] Verify database connectivity and run migration scripts.
 - [ ] Run health check queries against `/actuator/health`.
 - [ ] Send test print jobs from client machines using mTLS certificates.
@@ -1077,7 +1213,7 @@ Use the Conventional Commits format to ensure readable histories:
 - [ ] Verify that page deduction calculations update database balances.
 - [ ] Review system logs to ensure no stack trace errors are present.
 
-#### 4. Post-Deployment Monitoring
+##### 4. Post-Deployment Monitoring
 - [ ] Set up Prometheus alerts to monitor JVM heap memory usage.
 - [ ] Configure alarms for VM disk usage thresholds.
 - [ ] Monitor database connection pool usage patterns.
@@ -1086,20 +1222,20 @@ Use the Conventional Commits format to ensure readable histories:
 
 ---
 
-### 7. Maintenance & Technical Debt Plan
+#### 7. Maintenance & Technical Debt Plan
 
-#### 12-Month Maintenance Schedule
+##### 12-Month Maintenance Schedule
 * **Q1:** Perform security audits and update dependency versions.
 * **Q2:** Review database logs and rebuild indices to optimize performance.
 * **Q3:** Update TLS certificates and run certificate rotation tasks.
 * **Q4:** Execute disaster recovery tests to verify database restore procedures.
 
-#### Technical Debt Register
+##### Technical Debt Register
 * **Debt-01 (High):** Re-verify printer certificate trust settings if devices are replaced.
 * **Debt-02 (Medium):** Refactor LDAP queries to support multi-domain Active Directory forests if company structures scale.
 * **Debt-03 (Low):** Clean up old transaction log records to prevent database bloat.
 
-#### Nice-to-Have Version 2 Features
+##### Nice-to-Have Version 2 Features
 * Web-based dashboard for users to check remaining page balances.
 * Support for department-wide shared quotas.
 * Automated email alerts sent to users when their quota drops below 10%.
@@ -1108,31 +1244,34 @@ Use the Conventional Commits format to ensure readable histories:
 
 ---
 
-## Part 4: Operational Readiness Verification
+### Part 4: Operational Readiness Verification
 
 This section provides verification commands to validate system health.
 
-### 1. Database Connection Pool Metrics
+#### 1. Database Connection Pool Metrics
 Check database connection pool states using local CLI commands:
 ```bash
-# Verify Active connection counts on the PostgreSQL backend
+## Verify Active connection counts on the PostgreSQL backend
 psql -U printuser -d printquota -c "SELECT count(*), state FROM pg_stat_activity GROUP BY state;"
 ```
 
-### 2. Spool File Directory Size Checks
+#### 2. Spool File Directory Size Checks
 Monitor disk spool folder usage on the CentOS host:
 ```bash
-# Check the disk usage of the print spool folder
+## Check the disk usage of the print spool folder
 du -sh /var/spool/print-quota/
 ```
 
-### 3. Verification of Systemd Binding Ports
+#### 3. Verification of Systemd Binding Ports
 Confirm that the unprivileged Java process binds to port 443:
 ```bash
-# List processes listening on port 443
+## List processes listening on port 443
 ss -tulpn | grep :443
 ```
 This output should indicate execution under the `printquota` user account.
 
 ---
 **END OF IMPLEMENTATION ROADMAP.**
+
+
+---

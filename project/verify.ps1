@@ -1,7 +1,10 @@
 [CmdletBinding()]
 param(
     [string]$ContainerName = "qa.carzonrent",
-    [string]$BaseUrl = "http://localhost:8081"
+    [string]$FunctionalUrl = "http://127.0.0.1:8081",
+    [string]$PublicUrl = "http://qa.carzonrent.com",
+    [int]$ExpectedHostPort = 8081,
+    [switch]$RequirePublicUrl
 )
 
 $ErrorActionPreference = "Stop"
@@ -18,54 +21,85 @@ function Test-Check {
     }
 }
 
-Test-Check "Container is running" { (docker inspect -f '{{.State.Running}}' $ContainerName) -eq "true" }
-Test-Check "Container health is healthy" { (docker inspect -f '{{.State.Health.Status}}' $ContainerName) -eq "healthy" }
-Test-Check "Hostname is qa.carzonrent" { (docker inspect -f '{{.Config.Hostname}}' $ContainerName) -eq "qa.carzonrent" }
-Test-Check "Host port 8081 maps to container port 80" { (docker port $ContainerName 80/tcp) -match ":8081$" }
-Test-Check "Backend port 8085 is not published" {
-    $bindings = docker inspect -f '{{json .HostConfig.PortBindings}}' $ContainerName
-    $bindings -notmatch '8085/tcp'
+function Get-HttpCode([string]$Url, [string[]]$Headers = @()) {
+    $arguments = @("-sS", "--connect-timeout", "4", "-o", "NUL", "-w", "%{http_code}")
+    foreach ($header in $Headers) { $arguments += @("-H", $header) }
+    $arguments += $Url
+    & curl.exe @arguments 2>$null
 }
-Test-Check "Apache configuration is valid" {
-    cmd.exe /d /c "docker exec $ContainerName httpd -t >NUL 2>&1"
+
+Write-Host "Functional gateway: $FunctionalUrl (explicit non-privileged QA mapping)"
+Write-Host "Required public URL: $PublicUrl"
+
+Test-Check "Docker container is running" { (docker inspect -f '{{.State.Running}}' $ContainerName) -eq "true" }
+Test-Check "Docker health is healthy" { (docker inspect -f '{{.State.Health.Status}}' $ContainerName) -eq "healthy" }
+Test-Check "Container hostname is qa.carzonrent" { (docker inspect -f '{{.Config.Hostname}}' $ContainerName) -eq "qa.carzonrent" }
+Test-Check "Host port $ExpectedHostPort maps to Apache port 80" { (docker port $ContainerName 80/tcp) -match ":$ExpectedHostPort$" }
+Test-Check "Backend port 8085 is not published" {
+    (docker inspect -f '{{json .HostConfig.PortBindings}}' $ContainerName) -notmatch '8085/tcp'
+}
+Test-Check "Apache configuration syntax is valid" {
+    docker exec $ContainerName httpd -t 2>&1 | Out-Null
     $LASTEXITCODE -eq 0
 }
 Test-Check "Required Apache modules are loaded" {
-    $modules = docker exec $ContainerName httpd -M 2>&1
+    $modules = (docker exec $ContainerName httpd -M 2>&1) -join "`n"
     @("proxy_module", "proxy_http_module", "proxy_connect_module", "ssl_module", "headers_module") |
-        ForEach-Object { $modules -match [regex]::Escape($_) } |
-        Where-Object { -not $_ } | Measure-Object | Select-Object -ExpandProperty Count | ForEach-Object { $_ -eq 0 }
+        Where-Object { $modules -notmatch [regex]::Escape($_) } |
+        Measure-Object | Select-Object -ExpandProperty Count | ForEach-Object { $_ -eq 0 }
 }
 Test-Check "Spring Boot listens only on 127.0.0.1:8085" {
-    $sockets = docker exec $ContainerName ss -lntp
-    (($sockets -match "127\.0\.0\.1]:8085") -or ($sockets -match "127\.0\.0\.1:8085")) -and
-        ($sockets -notmatch "0\.0\.0\.0:8085") -and
-        ($sockets -notmatch "\[::\]:8085")
+    $sockets = (docker exec $ContainerName ss -lntp) -join "`n"
+    ($sockets -match "127\.0\.0\.1:8085") -and
+        ($sockets -notmatch "0\.0\.0\.0:8085") -and ($sockets -notmatch "\[::\]:8085")
 }
-Test-Check "Spring Boot is reachable inside the container" {
+Test-Check "Spring Boot process is running" { ((docker top $ContainerName) -join "`n") -match 'qa-dashboard\.jar' }
+Test-Check "Backend is reachable inside the container" {
     (docker exec $ContainerName curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:8085/health) -eq "200"
 }
-Test-Check "Apache proxy returns HTTP 200" { (curl.exe -sS -o NUL -w '%{http_code}' "$BaseUrl/") -eq "200" }
-Test-Check "Proxied health endpoint returns HTTP 200" { (curl.exe -sS -o NUL -w '%{http_code}' "$BaseUrl/health") -eq "200" }
-Test-Check "Proxied info endpoint returns HTTP 200" { (curl.exe -sS -o NUL -w '%{http_code}' "$BaseUrl/info") -eq "200" }
-Test-Check "Spring Boot static CSS is served through Apache" { (curl.exe -sS -o NUL -w '%{http_code}' "$BaseUrl/css/dashboard.css") -eq "200" }
-Test-Check "Unknown routes return HTTP 404" { (curl.exe -sS -o NUL -w '%{http_code}' "$BaseUrl/not-found") -eq "404" }
-Test-Check "Backend marker proves reverse proxy path" { (curl.exe -sSI "$BaseUrl/") -match "X-Carzonrent-Backend: qa-dashboard-springboot:8085" }
-Test-Check "Info endpoint reports QA environment" { (curl.exe -sS "$BaseUrl/info") -match '"environment":"QA"' }
-Test-Check "Java 21 is installed" {
-    $version = cmd.exe /d /c "docker exec $ContainerName java -version 2>&1"
+Test-Check "Apache reverse proxy returns HTTP 200" { (Get-HttpCode "$FunctionalUrl/" @("Host: qa.carzonrent.com")) -eq "200" }
+Test-Check "Health endpoint returns HTTP 200" { (Get-HttpCode "$FunctionalUrl/health") -eq "200" }
+Test-Check "Health endpoint reports UP" { (curl.exe -sS "$FunctionalUrl/health") -match '"status":"UP"' }
+Test-Check "Info endpoint returns HTTP 200" { (Get-HttpCode "$FunctionalUrl/info") -eq "200" }
+Test-Check "Info reports QA and active reverse proxy" {
+    $info = curl.exe -sS "$FunctionalUrl/info"
+    ($info -match '"environment":"QA"') -and ($info -match '"reverseProxyStatus":"ACTIVE"')
+}
+Test-Check "CentOS Stream runtime is reported" { (curl.exe -sS "$FunctionalUrl/info") -match 'CentOS Stream 9' }
+Test-Check "Dashboard CSS is served and non-empty" {
+    $css = curl.exe -sS "$FunctionalUrl/css/dashboard.css"
+    ($LASTEXITCODE -eq 0) -and ($css -match ':root') -and ($css.Length -gt 500)
+}
+Test-Check "Unknown route returns HTTP 404" { (Get-HttpCode "$FunctionalUrl/does-not-exist") -eq "404" }
+Test-Check "Backend marker proves Apache-to-Spring path" {
+    ((curl.exe -sSI "$FunctionalUrl/") -join "`n") -match 'X-Carzonrent-Backend: qa-dashboard-springboot:8085'
+}
+Test-Check "Java 21 runtime is installed" {
+    $version = (docker exec $ContainerName java -version 2>&1) -join "`n"
     ($LASTEXITCODE -eq 0) -and ($version -match 'version "21')
 }
-Test-Check "Spring Boot process is running" { (docker top $ContainerName) -match 'qa-dashboard\.jar' }
+
+$publicCode = Get-HttpCode $PublicUrl
+if ($publicCode -eq "200") {
+    Write-Host "[PASS] Required public URL is reachable: $PublicUrl" -ForegroundColor Green
+} else {
+    $resolved = @(Resolve-DnsName qa.carzonrent.com -Type A -ErrorAction SilentlyContinue | Select-Object -ExpandProperty IPAddress -Unique)
+    $mapping = (docker port $ContainerName 80/tcp 2>$null) -join ", "
+    $port80Listener = Get-NetTCPConnection -LocalPort 80 -State Listen -ErrorAction SilentlyContinue
+    Write-Warning "Required public URL is NOT reachable (HTTP code: $publicCode)."
+    Write-Warning "qa.carzonrent.com resolves to: $($resolved -join ', '). Container port 80 is mapped as: $mapping."
+    if (-not $port80Listener) {
+        Write-Warning "Exact cause: no host process is listening on TCP port 80. A mapping such as -p 80:80 is required for a URL without a port suffix."
+    }
+    if ($RequirePublicUrl) { $failures.Add("Required public URL $PublicUrl is unreachable") }
+}
 
 Write-Host "`nContainer summary:"
 docker ps --filter "name=$ContainerName" --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}'
-Write-Host "`nRecent Docker and application logs:"
-docker logs --tail 40 $ContainerName
 
 if ($failures.Count -gt 0) {
     Write-Error ("Verification failed: " + ($failures -join "; "))
     exit 1
 }
 
-Write-Host "`nAll Carzonrent Spring Boot QA checks passed." -ForegroundColor Green
+Write-Host "`nAll functional QA deployment checks passed." -ForegroundColor Green

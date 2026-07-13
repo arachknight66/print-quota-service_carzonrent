@@ -98,30 +98,10 @@ docker compose up print-quota-app -d
 
 ## 6. Project Documentation Index
 
-Detailed architectural mappings and system administration operations guides are available in the repository root:
+Detailed project specifications, architectural details, local development setup guidelines, operational workflows, and the project changelog are organized into the following primary documents:
 
-1. [Architecture Blueprint](architecture.md) — Multi-module dependency layout, layered structure, data flows.
-2. [System Design Document](system-design.md) — Functional constraints, pattern templates, caching, and concurrency rules.
-3. [Database Documentation](database.md) — ER diagrams, schema definition, Liquibase migrations catalog, locking decisions.
-4. [API Catalog](api.md) — Actuator monitoring, health checks, JSON logging specifications.
-5. [Print Processing Logic](processing_documentation.md) — Pipeline stages, calculations, and multipliers.
-6. [Containerization & Docker Setup](docker.md) — Deployment layers, image security, Compose service networks.
-7. [Configuration Blueprint](configuration.md) — Global parameters, LDAP values, profiles.
-8. [Security & Threat Model](security.md) — Session tracking, directory permissions, TLS details.
-9. [Testing Matrix](testing.md) — Coverage specs, Testcontainers PostgreSQL setups, LDAP mocks.
-10. [Operations Guide](operations.md) — Maintenance procedures, logs locations, monitoring counters, backup strategies.
-11. [Project Roadmap](ROADMAP.md) — Completed milestones, Phase 6 goals, architectural debt mapping.
-12. [IPP Proxy Architecture](proxy.md) — HTTP proxy endpoints, client connections, and status response generation.
-13. [Printer Routing Engine](printer-routing.md) — Configuration driven printer resolution and routing maps.
-14. [Memory-Constrained Streaming](streaming.md) — Stream partitioners, sequence reassembly, and backpressure.
-15. [Enterprise Reporting Blueprint](reporting.md) — SXSSFWorkbook streaming Excel sheets, logs, and monthly reset crons.
-16. [Dashboard Analytics Engine](dashboard.md) — Counts, sums, averages, and group-by stats REST API.
-17. [Administrative Portal](administration.md) — Quota adjustments, resets, email alerts, and sync controls.
-18. [Production Hardening Guide](production-hardening.md) — Pool limits, CentOS kernel drops, and JVM garbage collector parameters.
-19. [Release Checklist](release-checklist.md) — SBOM artifacts, PMD/SpotBugs static verification, and build gates.
-20. [Deployment Validation](deployment-validation.md) — Actuator health checks, curl command validations, and Postgres restart triages.
-21. [Performance Tuning](performance.md) — SXSSFWorkbook memory benchmarks, indexing models, and buffer limits.
-22. [Backup & Recovery](backup-recovery.md) — PowerShell dump utilities, certificates migration, and RPO/RTO goals.
-23. [Operations Runbook](operations-runbook.md) — Structured JSON logging formats, Prometheus alert levels, and crons lists.
-24. [Incident Response Manual](incident-response.md) — Triage steps for network resets, LDAP database sync errors, and lock timeouts.
-25. [Security Audit Report](security-audit.md) — OWASP check matrices, HTTP security headers, and read-only container rules.
+1. [ARCHITECTURE.md](ARCHITECTURE.md) — System requirements, software requirements specifications, architecture blueprints, system design patterns, database designs, API specifications, and IPP proxy architecture, including the history of Architecture Decision Records (ADRs).
+2. [SETUP.md](SETUP.md) — Prerequisites, local environment setup details, local testing guidelines, user & administration workflows, and local QA environment guides.
+3. [DEPLOYMENT.md](DEPLOYMENT.md) — Production deployment guidelines, container hardening, CI/CD Jenkins setup, release checklists, operational runbooks, backups, and incident response playbooks.
+4. [CHANGELOG.md](CHANGELOG.md) — Release notes, milestones, historical implementation roadmaps, and the future project roadmap.
+

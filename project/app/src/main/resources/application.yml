@@ -15,6 +15,9 @@ server:
 
 carzonrent:
   application-version: ${BUILD_VERSION:2.0.0}
+  container-name: ${CONTAINER_NAME:qa.carzonrent}
+
+server.forward-headers-strategy: native
 
 logging:
   level:
