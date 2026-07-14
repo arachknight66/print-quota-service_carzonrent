@@ -4,7 +4,7 @@ param(
     [string]$FunctionalUrl = "http://127.0.0.1",
     [string]$PublicUrl = "http://qa.carzonrent.com",
     [int]$ExpectedHostPort = 80,
-    [int]$ExpectedContainerPort = 80,
+    [int]$ExpectedContainerPort = 8080,
     [switch]$RequirePublicUrl
 )
 
@@ -45,7 +45,10 @@ Write-Host "Required public URL: $PublicUrl"
 
 Test-Check "Docker container is running" { (docker inspect -f '{{.State.Running}}' $ContainerName) -eq "true" }
 Test-Check "Docker health is healthy" { (docker inspect -f '{{.State.Health.Status}}' $ContainerName) -eq "healthy" }
-Test-Check "Container hostname is qa.carzonrent" { (docker inspect -f '{{.Config.Hostname}}' $ContainerName) -eq "qa.carzonrent" }
+Test-Check "Container identity is qa.carzonrent" {
+    $identity = (docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' $ContainerName) -join "`n"
+    ($identity -match 'CONTAINER_NAME=qa\.carzonrent')
+}
 Test-Check "Host port $ExpectedHostPort maps to Apache port $ExpectedContainerPort" {
     (docker port $ContainerName "$ExpectedContainerPort/tcp") -match ":$ExpectedHostPort$"
 }
@@ -66,13 +69,13 @@ Test-Check "Spring Boot binds to loopback and not wildcard" {
     $addresses = (docker exec $ContainerName sh -lc "awk 'NR>1 && `$2 ~ /:1F95/ {print `$2}' /proc/net/tcp /proc/net/tcp6") -join "`n"
     ($addresses -match "0100007F:1F95") -and ($addresses -notmatch "00000000:1F95") -and ($addresses -notmatch "00000000000000000000000000000000:1F95")
 }
-Test-Check "Spring Boot process is running" { ((docker top $ContainerName) -join "`n") -match 'java .* -jar /app/app\.jar' }
+Test-Check "Spring Boot process is running" { ((docker top $ContainerName) -join "`n") -match 'java .* -jar /opt/carzonrent/runtime/qa-dashboard\.jar' }
 Test-Check "Entrypoint supervises Apache and Spring Boot" {
     $top = (docker top $ContainerName -eo pid,ppid,user,args) -join "`n"
-    ($top -match 'entrypoint\.sh') -and ($top -match 'httpd -DFOREGROUND') -and ($top -match 'java .* -jar /app/app\.jar')
+    ($top -match 'entrypoint\.sh') -and ($top -match 'httpd -DFOREGROUND') -and ($top -match 'java .* -jar /opt/carzonrent/runtime/qa-dashboard\.jar')
 }
 Test-Check "Spring Boot runs as printuser user" {
-    $result = docker exec $ContainerName sh -lc "printuser_uid=`$(id -u printuser); for cmdline in /proc/[0-9]*/cmdline; do tr '\\0' ' ' < `$cmdline | grep -q '/app/app.jar' || continue; pid=`$(basename `$(dirname `$cmdline)); uid=`$(awk '/^Uid:/ {print `$2}' /proc/`$pid/status); test `$uid = `$printuser_uid && exit 0; done; exit 1"
+    $result = docker exec $ContainerName sh -lc "printuser_uid=`$(id -u printuser); for cmdline in /proc/[0-9]*/cmdline; do tr '\\0' ' ' < `$cmdline | grep -q '/opt/carzonrent/runtime/qa-dashboard.jar' || continue; pid=`$(basename `$(dirname `$cmdline)); uid=`$(awk '/^Uid:/ {print `$2}' /proc/`$pid/status); test `$uid = `$printuser_uid && exit 0; done; exit 1"
     $LASTEXITCODE -eq 0
 }
 Test-Check "Runtime environment is configured explicitly" {
@@ -82,29 +85,32 @@ Test-Check "Runtime environment is configured explicitly" {
         ($env -match 'JENKINS_BUILD_NUMBER=')
 }
 Test-Check "Apache logs to container stdout and stderr" {
-    $links = (docker exec $ContainerName sh -lc "readlink /var/log/httpd/access_log; readlink /var/log/httpd/error_log") -join "`n"
-    ($links -match '/dev/stdout') -and ($links -match '/dev/stderr')
+    $previousErrorActionPreference = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    $logs = (docker logs --tail 80 $ContainerName 2>&1) -join "`n"
+    $ErrorActionPreference = $previousErrorActionPreference
+    ($logs -match 'GET /health/readiness') -and ($logs -match 'duration_us=')
 }
 Test-Check "Entrypoint emitted useful startup logs" {
     $previousErrorActionPreference = $ErrorActionPreference
     $ErrorActionPreference = "Continue"
     $logs = (docker logs $ContainerName 2>&1) -join "`n"
     $ErrorActionPreference = $previousErrorActionPreference
-    ($logs -match 'SPRING BOOT') -and ($logs -match 'Starting reverse proxy gateway')
+    ($logs -match 'Starting Spring Boot') -and ($logs -match 'Starting Apache in foreground mode')
 }
 Test-Check "Backend is reachable inside the container" {
-    (docker exec $ContainerName curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:8085/actuator/health) -eq "200"
+    (docker exec $ContainerName curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:8085/health) -eq "200"
 }
 Test-Check "Apache reverse proxy returns HTTP 200" { (Get-HttpCode "$FunctionalUrl/" @("Host: qa.carzonrent.com")) -eq "200" }
 Test-Check "Health endpoint returns HTTP 200" { (Get-HttpCode "$FunctionalUrl/health") -eq "200" }
 Test-Check "Health endpoint reports UP" { (curl.exe -sS "$FunctionalUrl/health") -match '"status":"UP"' }
 Test-Check "Readiness endpoint returns UP" {
-    ((Get-HttpCode "$FunctionalUrl/actuator/health/readiness") -eq "200") -and
-        ((curl.exe -sS "$FunctionalUrl/actuator/health/readiness") -match '"status":"UP"')
+    ((Get-HttpCode "$FunctionalUrl/health/readiness") -eq "200") -and
+        ((curl.exe -sS "$FunctionalUrl/health/readiness") -match '"status":"UP"')
 }
 Test-Check "Liveness endpoint returns UP" {
-    ((Get-HttpCode "$FunctionalUrl/actuator/health/liveness") -eq "200") -and
-        ((curl.exe -sS "$FunctionalUrl/actuator/health/liveness") -match '"status":"UP"')
+    ((Get-HttpCode "$FunctionalUrl/health/liveness") -eq "200") -and
+        ((curl.exe -sS "$FunctionalUrl/health/liveness") -match '"status":"UP"')
 }
 Test-Check "Info endpoint returns HTTP 200" { (Get-HttpCode "$FunctionalUrl/info") -eq "200" }
 Test-Check "Info reports QA and active reverse proxy" {
@@ -125,17 +131,17 @@ Test-Check "Actuator info exposes app and git sections" {
     ($actuatorInfo -match '"app"') -and ($actuatorInfo -match '"git"')
 }
 Test-Check "Metrics endpoint exposes JVM and HTTP metrics" {
-    $metrics = curl.exe -sS "$FunctionalUrl/actuator/metrics"
+    $metrics = curl.exe -sS "$FunctionalUrl/metrics"
     ($metrics -match 'jvm\.memory\.used') -and ($metrics -match 'http\.server\.requests')
 }
 Test-Check "CentOS Stream runtime is reported" { (curl.exe -sS "$FunctionalUrl/info") -match 'CentOS Stream 9' }
 Test-Check "Dashboard references external CSS" {
     $html = (curl.exe -sS "$FunctionalUrl/") | Out-String
-    ($LASTEXITCODE -eq 0) -and ($html -match '<link[^>]+stylesheet') -and ($html -match '/css/dashboard.css') -and ($html -match '<section')
+    ($LASTEXITCODE -eq 0) -and ($html -match '<link[^>]+stylesheet') -and ($html -match '/style.css') -and ($html -match '<section')
 }
 Test-Check "CSS loads through Apache reverse proxy" {
-    $code = Get-HttpCode "$FunctionalUrl/css/dashboard.css"
-    $css = (curl.exe -sS "$FunctionalUrl/css/dashboard.css") | Out-String
+    $code = Get-HttpCode "$FunctionalUrl/style.css"
+    $css = (curl.exe -sS "$FunctionalUrl/style.css") | Out-String
     ($code -eq "200") -and ($css -match "font-family") -and ($css -match "card")
 }
 Test-Check "Unknown route returns HTTP 404" { (Get-HttpCode "$FunctionalUrl/does-not-exist") -eq "404" }
@@ -166,6 +172,9 @@ Test-Check "Java 21 runtime is installed" {
 }
 Test-Check "Container stop signal is SIGTERM" {
     (docker inspect -f '{{.Config.StopSignal}}' $ContainerName) -eq "SIGTERM"
+}
+Test-Check "Container runs without root" {
+    (docker inspect -f '{{.Config.User}}' $ContainerName) -match '^10001(:10001)?$'
 }
 Test-Check "No obvious zombie processes are present" {
     $states = (docker exec $ContainerName sh -lc "for stat in /proc/[0-9]*/stat; do awk '{print `$3}' `$stat; done") -join "`n"

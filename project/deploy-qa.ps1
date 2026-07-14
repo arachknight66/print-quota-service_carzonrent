@@ -4,9 +4,9 @@ param(
     [string]$ImageTag,
     [string]$ContainerName = "qa.carzonrent",
     [string]$Hostname = "qa.carzonrent",
-    [int]$HostPort = 8081,
+    [int]$HostPort = 80,
     [int]$ContainerPort = 8080,
-    [string]$FunctionalUrl = "http://127.0.0.1:8081",
+    [string]$FunctionalUrl = "http://127.0.0.1",
     [string]$BuildVersion = "2.0.0",
     [string]$GitCommitId = "unknown",
     [string]$BuildTimestamp = "",
@@ -48,6 +48,8 @@ function Start-QaContainer([string]$Name, [string]$Image) {
         --name $Name `
         --hostname $Hostname `
         -p "${HostPort}:${ContainerPort}" `
+        --security-opt no-new-privileges:true `
+        --cap-drop ALL `
         -e BUILD_VERSION="$BuildVersion" `
         -e GIT_COMMIT_ID="$GitCommitId" `
         -e BUILD_TIMESTAMP="$BuildTimestamp" `
@@ -96,6 +98,25 @@ function Remove-OldProjectImages {
     }
 }
 
+function Remove-ObsoleteQaResources {
+    Write-Step "Removing obsolete QA containers created by this project"
+    $obsoleteContainers = @("qa-carzonrent", "printkeep-qa", "carzonrent-qa")
+    foreach ($name in $obsoleteContainers) {
+        if ($name -ne $ContainerName -and (Test-ContainerExists $name)) {
+            docker rm -f $name | Out-Host
+        }
+    }
+
+    Write-Step "Removing obsolete QA image tags created by this project"
+    $obsoleteImageRefs = @("printkeep-print-quota-app:latest", "printkeep/print-quota-service:latest")
+    foreach ($ref in $obsoleteImageRefs) {
+        docker image inspect $ref *> $null
+        if ($LASTEXITCODE -eq 0) {
+            docker rmi $ref 2>$null | Out-Host
+        }
+    }
+}
+
 try {
     if ([string]::IsNullOrWhiteSpace($DockerImageTag)) {
         $DockerImageTag = "latest"
@@ -110,6 +131,7 @@ try {
         }
     }
     Write-Step "Deploying image $ImageTag to $ContainerName on host port $HostPort"
+    Remove-ObsoleteQaResources
 
     if (Test-ContainerExists $previousName) {
         Write-Step "Removing stale previous project container $previousName"
@@ -127,7 +149,7 @@ try {
     Wait-Healthy $ContainerName $HealthTimeoutSeconds
 
     Write-Step "Running post-deploy verification"
-    & "$PSScriptRoot\verify.ps1" -ContainerName $ContainerName -FunctionalUrl $FunctionalUrl -ExpectedHostPort $HostPort
+    & "$PSScriptRoot\verify.ps1" -ContainerName $ContainerName -FunctionalUrl $FunctionalUrl -ExpectedHostPort $HostPort -ExpectedContainerPort $ContainerPort
 
     if (Test-ContainerExists $previousName) {
         Write-Step "Deployment verified; removing rollback container $previousName"

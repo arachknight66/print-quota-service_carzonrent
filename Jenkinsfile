@@ -14,9 +14,9 @@ pipeline {
         string(name: 'QA_CONTAINER_NAME', defaultValue: 'qa.carzonrent', description: 'Existing QA container name used by deployment and verification scripts.')
         string(name: 'QA_HOSTNAME', defaultValue: 'qa.carzonrent', description: 'Hostname assigned to the QA container.')
         string(name: 'QA_HOST_PORT', defaultValue: '80', description: 'Host port exposed for QA smoke tests.')
-        string(name: 'QA_CONTAINER_PORT', defaultValue: '80', description: 'Container Apache port exposed by docker/app/Dockerfile.')
+        string(name: 'QA_CONTAINER_PORT', defaultValue: '8080', description: 'Container Apache port exposed by project/Dockerfile.')
         string(name: 'QA_FUNCTIONAL_URL', defaultValue: 'http://127.0.0.1', description: 'Base URL used by existing QA smoke tests.')
-        string(name: 'DOCKER_IMAGE_REPOSITORY', defaultValue: 'printkeep/print-quota-service', description: 'Local or registry image repository name.')
+        string(name: 'DOCKER_IMAGE_REPOSITORY', defaultValue: 'carzonrent-qa', description: 'Local or registry image repository name.')
         string(name: 'DOCKER_REGISTRY_URL', defaultValue: '', description: 'Optional registry host. Leave blank for local Docker daemon only.')
     }
 

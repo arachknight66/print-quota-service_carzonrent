@@ -9,7 +9,7 @@ replicaCount: 2
 
 image:
   repository: carzonrent-qa
-  tag: "2.0.0"
+  tag: "latest"
   pullPolicy: IfNotPresent
   pullSecrets: []
 
@@ -129,7 +129,7 @@ securityContext:
       type: RuntimeDefault
   container:
     allowPrivilegeEscalation: false
-    readOnlyRootFilesystem: true
+    readOnlyRootFilesystem: false
     capabilities:
       drop:
         - ALL

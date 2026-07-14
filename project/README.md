@@ -60,19 +60,19 @@ Expected container identity:
 
 - Container name: `qa.carzonrent`
 - Hostname: `qa.carzonrent`
-- Public service: Apache on container port `80`
+- Public service: Apache on container port `8080`
 - Private backend: Spring Boot on `127.0.0.1:8085`
 
 Recommended exact-domain run command:
 
 ```powershell
-docker run -d --name qa.carzonrent --hostname qa.carzonrent --restart unless-stopped -p 80:80 carzonrent-qa:latest
+docker run -d --name qa.carzonrent --hostname qa.carzonrent --restart unless-stopped -p 80:8080 carzonrent-qa:latest
 ```
 
 Fallback non-privileged run command:
 
 ```powershell
-docker run -d --name qa.carzonrent --hostname qa.carzonrent --restart unless-stopped -p 8081:80 carzonrent-qa:latest
+docker run -d --name qa.carzonrent --hostname qa.carzonrent --restart unless-stopped -p 8081:8080 carzonrent-qa:latest
 ```
 
 The fallback is useful for local testing, but it does not satisfy `http://qa.carzonrent.com` because a URL without a port uses TCP port `80`.
@@ -139,7 +139,7 @@ Binding Spring Boot to `127.0.0.1:8085` ensures it can only be reached from insi
 
 Apache is the externally exposed service because it provides a stable enterprise entry point, reverse proxy behavior, standard HTTP operational controls, and a clean boundary between public traffic and the Java application.
 
-Apache listens on container port `80` because HTTP clients use port `80` by default for `http://` URLs. During local verification, host port `8081` is mapped to container port `80` to avoid changing privileged host port `80` without explicit approval.
+Apache listens on container port `8080` so the image can run rootless. Docker publishes host port `80` to container port `8080` so HTTP clients can still use `http://qa.carzonrent.com` without a port suffix. During local fallback verification, host port `8081` can be mapped to container port `8080`.
 
 ## Request Lifecycle
 
@@ -152,7 +152,7 @@ Apache listens on container port `80` because HTTP clients use port `80` by defa
 
 ## Docker Networking
 
-The container has an isolated network namespace. Spring Boot binds to container loopback only, so it is reachable by Apache inside the same container but not published on the Docker host. Docker port publishing maps a host port to a container port; the verified local mapping is `8081:80`, which exposes only Apache.
+The container has an isolated network namespace. Spring Boot binds to container loopback only, so it is reachable by Apache inside the same container but not published on the Docker host. Docker port publishing maps a host port to a container port; the verified fallback local mapping is `8081:8080`, which exposes only Apache.
 
 Bridge networking gives the container its own virtual interface. Docker forwards packets from the published host port to Apache inside the container. Apache then opens a separate loopback connection to Spring Boot on `127.0.0.1:8085`. Container loopback is private to that container, so the Docker host cannot reach the backend unless port `8085` is explicitly published, which this deployment does not do.
 
@@ -190,7 +190,7 @@ Phase 4 adds production-style QA hardening: readiness and liveness health groups
 
 ## Kubernetes Readiness
 
-Phase 5 adds Kubernetes-ready enterprise deployment assets without changing the application architecture. The Helm chart under `helm/carzonrent-qa` creates namespace, deployment, service, ingress, config, secret, HPA, PDB, network policy, quota, and limit range resources. Kubernetes deployment details are documented in `KUBERNETES.md`.
+Phase 5 adds Kubernetes-ready enterprise deployment assets without changing the application architecture. The Helm chart under `helm/carzonrent-qa` creates namespace, deployment, service, ingress, config, secret, HPA, PDB, network policy, quota, and limit range resources. Plain `kubectl` manifests are available under `kubernetes`. Kubernetes deployment details are documented in `KUBERNETES.md`.
 
 ## Troubleshooting
 
