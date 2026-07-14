@@ -1,6 +1,7 @@
 package com.printkeep.quota.core.proxy.controller;
 
 import com.printkeep.quota.core.proxy.service.PrinterProxyService;
+import com.printkeep.quota.core.security.ClientCertAuthFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.MDC;
@@ -38,6 +39,8 @@ public class IppProxyController {
 
         final String correlationId = MDC.get("correlationId");
         final String clientHost = request.getRemoteHost();
+        final String verifiedClientCN =
+                (String) request.getAttribute(ClientCertAuthFilter.VERIFIED_CLIENT_CN_ATTRIBUTE);
 
         response.setContentType("application/ipp");
 
@@ -46,7 +49,8 @@ public class IppProxyController {
                 response.getOutputStream(),
                 printerName,
                 correlationId,
-                clientHost
+                clientHost,
+                verifiedClientCN
         );
     }
 }

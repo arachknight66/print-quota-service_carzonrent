@@ -76,7 +76,7 @@ class IppProxyIntegrationTests extends AbstractIntegrationTest {
         final PipelineResult pipelineResult = new PipelineResult(
                 IppDecision.ALLOW, "Success", "corr-999", 5, 1, "jdoe", "LaserJet_5", 5
         );
-        when(pipeline.process(any(IppPacket.class), anyString(), anyString())).thenReturn(pipelineResult);
+        when(pipeline.process(any(IppPacket.class), anyString(), anyString(), any())).thenReturn(pipelineResult);
 
         // HTTP Forwarding client mock returning simulated printer response
         final InputStream printerResponseStream = new ByteArrayInputStream("PRINTER_OK".getBytes(StandardCharsets.UTF_8));
@@ -113,7 +113,7 @@ class IppProxyIntegrationTests extends AbstractIntegrationTest {
         final PipelineResult pipelineResult = new PipelineResult(
                 IppDecision.REJECT_INSUFFICIENT_QUOTA, "Insufficient balance", "corr-888", 5, 1, "jdoe", "LaserJet_5", 5
         );
-        when(pipeline.process(any(IppPacket.class), anyString(), anyString())).thenReturn(pipelineResult);
+        when(pipeline.process(any(IppPacket.class), anyString(), anyString(), any())).thenReturn(pipelineResult);
 
         final HttpHeaders headers = new HttpHeaders();
         headers.set("Content-Type", "application/ipp");

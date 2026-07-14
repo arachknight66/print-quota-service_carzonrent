@@ -56,12 +56,17 @@ public class PrintProcessingPipeline {
      * @param packet        the raw decoded IPP packet.
      * @param correlationId unique request trace ID.
      * @param host          client hostname.
+     * @param verifiedClientCN verified client certificate common name.
      * @return the pipeline evaluation result.
      */
-    public PipelineResult process(final IppPacket packet, final String correlationId, final String host) {
+    public PipelineResult process(
+            final IppPacket packet,
+            final String correlationId,
+            final String host,
+            final String verifiedClientCN) {
         requestsReceived.increment();
         final Instant start = Instant.now();
-        final PipelineContext context = new PipelineContext(packet, correlationId, host);
+        final PipelineContext context = new PipelineContext(packet, correlationId, host, verifiedClientCN);
 
         try {
             for (final PipelineStage stage : stages) {

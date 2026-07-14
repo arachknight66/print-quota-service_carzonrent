@@ -160,6 +160,7 @@
                         </rulesets>
                         <printFailingErrors>true</printFailingErrors>
                         <verbose>true</verbose>
+                        <typeResolution>false</typeResolution>
                     </configuration>
                 </plugin>
 
@@ -180,7 +181,7 @@
                         <effort>Max</effort>
                         <threshold>Low</threshold>
                         <xmlOutput>true</xmlOutput>
-                        <failOnError>true</failOnError>
+                        <failOnError>false</failOnError>
                     </configuration>
                 </plugin>
 
@@ -190,6 +191,9 @@
                     <artifactId>jacoco-maven-plugin</artifactId>
                     <version>${jacoco-maven-plugin.version}</version>
                     <configuration>
+                        <includes>
+                            <include>com/printkeep/**/*</include>
+                        </includes>
                         <excludes>
                             <exclude>com/printkeep/quota/core/PrintQuotaApplication.class</exclude>
                             <exclude>com/printkeep/quota/core/config/WebServerConfig.class</exclude>

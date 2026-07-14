@@ -1,25 +1,84 @@
 spring:
   application:
-    name: qa-dashboard
+    name: ${SPRING_APPLICATION_NAME:qa-dashboard}
   main:
     banner-mode: console
+  lifecycle:
+    timeout-per-shutdown-phase: ${SHUTDOWN_PHASE_TIMEOUT:20s}
   thymeleaf:
     cache: true
 
 server:
-  address: 127.0.0.1
-  port: 8085
+  address: ${SERVER_ADDRESS:127.0.0.1}
+  port: ${SERVER_PORT:8085}
+  shutdown: graceful
   error:
     whitelabel:
       enabled: false
 
 carzonrent:
+  environment: ${CARZONRENT_ENVIRONMENT:QA}
   application-version: ${BUILD_VERSION:2.0.0}
   container-name: ${CONTAINER_NAME:qa.carzonrent}
+  backend-address: ${SERVER_ADDRESS:127.0.0.1}:${SERVER_PORT:8085}
+  git-commit-id: ${GIT_COMMIT_ID:unknown}
+  build-timestamp: ${BUILD_TIMESTAMP:unknown}
+  docker-image-tag: ${DOCKER_IMAGE_TAG:local}
+  jenkins-build-number: ${JENKINS_BUILD_NUMBER:local}
+  helm-chart-version: ${HELM_CHART_VERSION:unknown}
+  helm-version: ${HELM_VERSION:unknown}
+  kubernetes-revision: ${KUBERNETES_REVISION:unknown}
+  container-image: ${CONTAINER_IMAGE:unknown}
+  deployment-time: ${DEPLOYMENT_TIME:unknown}
 
 server.forward-headers-strategy: native
 
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+      group:
+        liveness:
+          include: livenessState
+        readiness:
+          include: readinessState
+  endpoints:
+    web:
+      base-path: /
+      exposure:
+        include: health,metrics,prometheus
+  info:
+    env:
+      enabled: true
+    git:
+      mode: simple
+    java:
+      enabled: true
+    os:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+      environment: ${carzonrent.environment}
+
+info:
+  app:
+    name: ${spring.application.name}
+    environment: ${carzonrent.environment}
+    version: ${carzonrent.application-version}
+    docker-image-tag: ${carzonrent.docker-image-tag}
+    jenkins-build-number: ${carzonrent.jenkins-build-number}
+    helm-chart-version: ${carzonrent.helm-chart-version}
+    helm-version: ${carzonrent.helm-version}
+    kubernetes-revision: ${carzonrent.kubernetes-revision}
+    container-image: ${carzonrent.container-image}
+    deployment-time: ${carzonrent.deployment-time}
+
 logging:
+  pattern:
+    console: "{\"timestamp\":\"%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX}\",\"level\":\"%level\",\"thread\":\"%thread\",\"logger\":\"%logger{36}\",\"correlationId\":\"%X{correlationId:-none}\",\"message\":\"%replace(%msg){'\"','\\\"'}\"}%n"
   level:
-    root: INFO
-    com.carzonrent.platform.qadashboard: INFO
+    root: ${LOG_LEVEL_ROOT:INFO}
+    com.carzonrent.platform.qadashboard: ${LOG_LEVEL_APP:INFO}

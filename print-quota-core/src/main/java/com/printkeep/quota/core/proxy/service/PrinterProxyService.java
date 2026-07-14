@@ -77,6 +77,7 @@ public class PrinterProxyService {
      * @param printerName   logical target printer.
      * @param correlationId request trace correlation token.
      * @param clientHost    client host address.
+     * @param verifiedClientCN verified client certificate common name.
      * @throws IOException if network or write failures occur.
      */
     public void proxyPrintJob(
@@ -84,7 +85,8 @@ public class PrinterProxyService {
             final OutputStream out,
             final String printerName,
             final String correlationId,
-            final String clientHost) throws IOException {
+            final String clientHost,
+            final String verifiedClientCN) throws IOException {
 
         requestsProxied.increment();
         // 1. Capture attributes header block without loading print document in memory
@@ -116,7 +118,7 @@ public class PrinterProxyService {
         }
 
         // 3. Process the print job decision pipeline
-        final PipelineResult result = pipeline.process(packet, correlationId, clientHost);
+        final PipelineResult result = pipeline.process(packet, correlationId, clientHost, verifiedClientCN);
 
         if (!result.isAllowed()) {
             log.warn("[CorrID: {}] Print job rejected. Decision: {}, Reason: {}",

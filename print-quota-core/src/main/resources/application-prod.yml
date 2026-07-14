@@ -5,6 +5,10 @@ server:
     key-store-password: ${KEYSTORE_PASSWORD}
     key-store-type: ${KEYSTORE_TYPE:PKCS12}
     key-alias: ${KEY_ALIAS:printkeep}
+    client-auth: ${SSL_CLIENT_AUTH:need}
+    trust-store: ${TRUSTSTORE_PATH:classpath:truststore.p12}
+    trust-store-password: ${TRUSTSTORE_PASSWORD}
+    trust-store-type: ${TRUSTSTORE_TYPE:PKCS12}
     enabled: ${SSL_ENABLED:true}
 
 spring:

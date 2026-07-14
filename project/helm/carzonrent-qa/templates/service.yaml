@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "carzonrent-qa.fullname" . }}
+  namespace: {{ include "carzonrent-qa.namespace" . }}
+  labels:
+    {{- include "carzonrent-qa.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - name: http
+      port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.targetPort }}
+      protocol: TCP
+  selector:
+    {{- include "carzonrent-qa.selectorLabels" . | nindent 4 }}

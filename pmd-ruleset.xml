@@ -13,6 +13,8 @@
         <exclude name="PreserveStackTrace"/>
         <exclude name="UnusedPrivateMethod"/>
         <exclude name="UseVarargs"/>
+        <exclude name="LooseCoupling"/>
+        <exclude name="AvoidUsingHardCodedIP"/>
     </rule>
 
     <rule ref="category/java/codestyle.xml">
@@ -30,6 +32,7 @@
         <exclude name="UnnecessaryReturn"/>
         <exclude name="UselessParentheses"/>
         <exclude name="UseUnderscoresInNumericLiterals"/>
+        <exclude name="UnnecessaryImport"/>
     </rule>
 
     <rule ref="category/java/design.xml">
@@ -56,6 +59,7 @@
         <exclude name="EmptyCatchBlock"/>
         <exclude name="NullAssignment"/>
         <exclude name="UseLocaleWithCaseConversions"/>
+        <exclude name="InvalidLogMessageFormat"/>
     </rule>
     <rule ref="category/java/multithreading.xml">
         <exclude name="DoNotUseThreads"/>

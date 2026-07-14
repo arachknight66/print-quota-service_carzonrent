@@ -29,7 +29,7 @@
     </appender>
 
     <!-- Environment Profiles -->
-    <springProfile name="dev">
+    <springProfile name="dev,qa">
         <logger name="com.printkeep.quota" level="DEBUG" />
         <root level="INFO">
             <appender-ref ref="CONSOLE" />

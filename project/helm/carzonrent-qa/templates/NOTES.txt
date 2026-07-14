@@ -1,0 +1,14 @@
+Carzonrent QA has been rendered for namespace {{ include "carzonrent-qa.namespace" . }}.
+
+Ingress host:
+  {{ .Values.ingress.host }}
+
+Primary checks:
+  kubectl -n {{ include "carzonrent-qa.namespace" . }} rollout status deploy/{{ include "carzonrent-qa.fullname" . }}
+  kubectl -n {{ include "carzonrent-qa.namespace" . }} get pods,svc,ingress,hpa,pdb
+
+Application endpoints through Ingress:
+  http://{{ .Values.ingress.host }}/
+  http://{{ .Values.ingress.host }}/health/readiness
+  http://{{ .Values.ingress.host }}/health/liveness
+  http://{{ .Values.ingress.host }}/prometheus

@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "carzonrent-qa.fullname" . }}-config
+  namespace: {{ include "carzonrent-qa.namespace" . }}
+  labels:
+    {{- include "carzonrent-qa.labels" . | nindent 4 }}
+data:
+  SPRING_PROFILES_ACTIVE: {{ .Values.config.springProfilesActive | quote }}
+  SPRING_APPLICATION_NAME: {{ .Values.config.springApplicationName | quote }}
+  SERVER_ADDRESS: {{ .Values.config.serverAddress | quote }}
+  SERVER_PORT: {{ .Values.config.serverPort | quote }}
+  CARZONRENT_ENVIRONMENT: {{ .Values.config.environment | quote }}
+  LOG_LEVEL_ROOT: {{ .Values.config.logLevelRoot | quote }}
+  LOG_LEVEL_APP: {{ .Values.config.logLevelApp | quote }}
+  SHUTDOWN_PHASE_TIMEOUT: {{ .Values.config.shutdownPhaseTimeout | quote }}
+  BUILD_VERSION: {{ .Values.build.version | quote }}
+  GIT_COMMIT_ID: {{ .Values.build.gitCommitId | quote }}
+  BUILD_TIMESTAMP: {{ .Values.build.buildTimestamp | quote }}
+  DOCKER_IMAGE_TAG: {{ .Values.build.dockerImageTag | quote }}
+  JENKINS_BUILD_NUMBER: {{ .Values.build.jenkinsBuildNumber | quote }}
+  HELM_CHART_VERSION: {{ .Chart.Version | quote }}
+  HELM_VERSION: "v3"
+  KUBERNETES_REVISION: {{ .Release.Revision | quote }}
+  CONTAINER_IMAGE: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+  DEPLOYMENT_TIME: {{ now | date "2006-01-02T15:04:05Z" | quote }}

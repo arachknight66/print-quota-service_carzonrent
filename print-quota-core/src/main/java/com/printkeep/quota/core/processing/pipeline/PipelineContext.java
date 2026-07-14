@@ -15,6 +15,7 @@ public class PipelineContext {
     private final IppPacket ippPacket;
     private final String correlationId;
     private final String clientHostname;
+    private final String verifiedClientCN;
     private final Instant startTime;
 
     private User user;
@@ -25,9 +26,18 @@ public class PipelineContext {
     private Throwable exception;
 
     public PipelineContext(final IppPacket ippPacket, final String correlationId, final String clientHostname) {
+        this(ippPacket, correlationId, clientHostname, null);
+    }
+
+    public PipelineContext(
+            final IppPacket ippPacket,
+            final String correlationId,
+            final String clientHostname,
+            final String verifiedClientCN) {
         this.ippPacket = ippPacket;
         this.correlationId = correlationId;
         this.clientHostname = clientHostname != null ? clientHostname : "unknown";
+        this.verifiedClientCN = verifiedClientCN;
         this.startTime = Instant.now();
     }
 
@@ -41,6 +51,10 @@ public class PipelineContext {
 
     public String getClientHostname() {
         return clientHostname;
+    }
+
+    public String getVerifiedClientCN() {
+        return verifiedClientCN;
     }
 
     public Instant getStartTime() {

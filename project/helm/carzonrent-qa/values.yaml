@@ -1,0 +1,157 @@
+namespace:
+  create: true
+  name: carzonrent-qa
+
+nameOverride: ""
+fullnameOverride: ""
+
+replicaCount: 2
+
+image:
+  repository: carzonrent-qa
+  tag: "2.0.0"
+  pullPolicy: IfNotPresent
+  pullSecrets: []
+
+serviceAccount:
+  create: true
+  name: ""
+  automountServiceAccountToken: false
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/path: "/prometheus"
+  prometheus.io/port: "80"
+
+podLabels: {}
+
+deployment:
+  revisionHistoryLimit: 5
+  minReadySeconds: 10
+  progressDeadlineSeconds: 300
+  rollingUpdate:
+    maxUnavailable: 0
+    maxSurge: 1
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: http
+
+ingress:
+  enabled: true
+  className: ""
+  host: qa.carzonrent.com
+  path: /
+  pathType: Prefix
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "2400"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "2400"
+  tls:
+    enabled: false
+    secretName: ""
+
+config:
+  springProfilesActive: qa
+  springApplicationName: qa-dashboard
+  serverAddress: 127.0.0.1
+  serverPort: "8085"
+  environment: QA
+  logLevelRoot: INFO
+  logLevelApp: INFO
+  shutdownPhaseTimeout: 20s
+
+build:
+  version: "2.0.0"
+  gitCommitId: "unknown"
+  buildTimestamp: "unknown"
+  dockerImageTag: "2.0.0"
+  jenkinsBuildNumber: "kubernetes"
+
+secret:
+  create: true
+  data:
+    placeholder: "replace-with-external-secret-manager"
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    cpu: "1"
+    memory: 1Gi
+
+probes:
+  startup:
+    path: /health/liveness
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 24
+  readiness:
+    path: /health/readiness
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 3
+    failureThreshold: 3
+  liveness:
+    path: /health/liveness
+    initialDelaySeconds: 30
+    periodSeconds: 20
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+networkPolicy:
+  enabled: true
+  ingress:
+    namespaceSelector: {}
+  egress:
+    allowDns: true
+
+securityContext:
+  pod:
+    runAsNonRoot: true
+    runAsUser: 10001
+    runAsGroup: 10001
+    fsGroup: 10001
+    seccompProfile:
+      type: RuntimeDefault
+  container:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop:
+        - ALL
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+quota:
+  enabled: true
+  hard:
+    requests.cpu: "2"
+    requests.memory: 4Gi
+    limits.cpu: "4"
+    limits.memory: 8Gi
+    pods: "10"
+
+limitRange:
+  enabled: true
+  default:
+    cpu: "1"
+    memory: 1Gi
+  defaultRequest:
+    cpu: 250m
+    memory: 512Mi

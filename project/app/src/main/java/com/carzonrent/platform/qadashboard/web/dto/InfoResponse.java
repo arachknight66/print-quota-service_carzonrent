@@ -12,6 +12,15 @@ public record InfoResponse(
         String deploymentStatus,
         String currentTime,
         String buildVersion,
-        String containerName
+        String containerName,
+        String gitCommitId,
+        String buildTimestamp,
+        String dockerImageTag,
+        String jenkinsBuildNumber,
+        String helmChartVersion,
+        String helmVersion,
+        String kubernetesRevision,
+        String containerImage,
+        String deploymentTime
 ) {
 }
