@@ -2,89 +2,204 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="utf-8">
-  <title>Carzonrent QA Deployment Status</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Carzonrent | Enterprise QA Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <center>
-    <h1>Carzonrent QA Deployment Status</h1>
-    <h2>Legacy HTML Operations Page</h2>
-    <p>Spring Boot 3.3 on CentOS Stream 9 behind Apache HTTP Server.</p>
-  </center>
+  <div class="glow-bg"></div>
+  
+  <header>
+    <div class="header-container">
+      <div class="logo-area">
+        <span class="logo-icon">▲</span>
+        <div>
+          <h1>Carzonrent Platform</h1>
+          <p class="subtitle">QA Deployment Operations Control Center</p>
+        </div>
+      </div>
+      <div class="env-badge-container">
+        <span class="env-label">Environment</span>
+        <span class="env-value" th:text="${info.environment}">QA</span>
+      </div>
+    </div>
+  </header>
 
-  <hr>
+  <main>
+    <div class="dashboard-grid">
+      <!-- Card 1: Operations & Health -->
+      <section class="card glass">
+        <div class="card-header">
+          <span class="card-icon">⚡</span>
+          <h2>Gateway & Backend Status</h2>
+        </div>
+        <div class="card-body">
+          <div class="stat-row">
+            <span class="stat-label">Apache Gateway</span>
+            <span class="status-badge healthy" th:text="${info.apacheStatus}">RUNNING</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Reverse Proxy</span>
+            <span class="status-badge healthy" th:text="${info.reverseProxyStatus}">ACTIVE</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Backend Address</span>
+            <code class="mono" th:text="${info.backendAddress}">127.0.0.1:8085</code>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Overall Health</span>
+            <span class="status-badge healthy pulse" th:text="${info.deploymentStatus}">HEALTHY</span>
+          </div>
+        </div>
+      </section>
 
-  <table border="1" cellpadding="6" cellspacing="0" width="100%">
-    <caption><strong>Deployment Summary</strong></caption>
-    <tr>
-      <th align="left">Environment</th>
-      <td th:text="${info.environment}">QA</td>
-    </tr>
-    <tr>
-      <th align="left">Hostname</th>
-      <td th:text="${info.hostname}">qa.carzonrent</td>
-    </tr>
-    <tr>
-      <th align="left">Java Version</th>
-      <td th:text="${info.javaVersion}">21</td>
-    </tr>
-    <tr>
-      <th align="left">Spring Boot Version</th>
-      <td th:text="${info.springBootVersion}">3.3.x</td>
-    </tr>
-    <tr>
-      <th align="left">Apache Status</th>
-      <td th:text="${info.apacheStatus}">RUNNING</td>
-    </tr>
-    <tr>
-      <th align="left">Reverse Proxy Status</th>
-      <td th:text="${info.reverseProxyStatus}">ACTIVE</td>
-    </tr>
-    <tr>
-      <th align="left">Backend Address</th>
-      <td><code th:text="${info.backendAddress}">127.0.0.1:8085</code></td>
-    </tr>
-    <tr>
-      <th align="left">Deployment Status</th>
-      <td th:text="${info.deploymentStatus}">HEALTHY</td>
-    </tr>
-    <tr>
-      <th align="left">Current Time UTC</th>
-      <td th:text="${info.currentTime}">2026-07-13T00:00:00Z</td>
-    </tr>
-    <tr>
-      <th align="left">Build Version</th>
-      <td th:text="${info.buildVersion}">2.0.1</td>
-    </tr>
-    <tr>
-      <th align="left">Container Name</th>
-      <td th:text="${info.containerName}">qa.carzonrent</td>
-    </tr>
-    <tr>
-      <th align="left">Operating System</th>
-      <td th:text="${info.operatingSystem}">CentOS Stream 9</td>
-    </tr>
-  </table>
+      <!-- Card 2: CI/CD Build Information -->
+      <section class="card glass">
+        <div class="card-header">
+          <span class="card-icon">📦</span>
+          <h2>CI/CD Delivery Metadata</h2>
+        </div>
+        <div class="card-body">
+          <div class="stat-row">
+            <span class="stat-label">Application Version</span>
+            <span class="version-tag" th:text="${info.buildVersion}">2.0.0</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Jenkins Build Number</span>
+            <span class="build-tag" th:text="${info.jenkinsBuildNumber}">local</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Docker Image Tag</span>
+            <code class="mono-clean" th:text="${info.dockerImageTag}">local</code>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Container Name</span>
+            <span class="info-text" th:text="${info.containerName}">qa.carzonrent</span>
+          </div>
+        </div>
+      </section>
 
-  <h3>Service Endpoints</h3>
-  <ul>
-    <li><a href="/health">Health endpoint</a> - GET /health</li>
-    <li><a href="/info">Info endpoint</a> - GET /info</li>
-  </ul>
+      <!-- Card 3: Kubernetes & Helm Infrastructure -->
+      <section class="card glass">
+        <div class="card-header">
+          <span class="card-icon">☸️</span>
+          <h2>Kubernetes Orchestration</h2>
+        </div>
+        <div class="card-body">
+          <div class="stat-row">
+            <span class="stat-label">Helm Chart Version</span>
+            <span class="info-text font-medium" th:text="${info.helmChartVersion != 'unknown' ? info.helmChartVersion : 'N/A (Docker Run)'}">N/A</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Helm Version</span>
+            <span class="info-text" th:text="${info.helmVersion != 'unknown' ? info.helmVersion : 'N/A (Docker Run)'}">N/A</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">K8s Deployment Revision</span>
+            <span class="info-text font-medium" th:text="${info.kubernetesRevision != 'unknown' ? info.kubernetesRevision : 'N/A (Docker Run)'}">N/A</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Target Container Image</span>
+            <div class="image-text-scroll">
+              <code class="mono-clean text-xs" th:text="${info.containerImage != 'unknown' ? info.containerImage : 'local/carzonrent-qa:latest'}">carzonrent-qa:latest</code>
+            </div>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Cluster Deploy Time</span>
+            <span class="info-text text-sm" th:text="${info.deploymentTime != 'unknown' ? info.deploymentTime : 'N/A (Docker Run)'}">N/A</span>
+          </div>
+        </div>
+      </section>
 
-  <h3>Reverse Proxy Architecture Diagram</h3>
-  <pre>
-+----------------------+       +---------------------------+       +----------------------------+
-| Browser / QA User    | ----> | Apache HTTP Server :80    | ----> | Spring Boot 127.0.0.1:8085 |
-| qa.carzonrent.com    | HTTP  | Docker container gateway  | Proxy | Private backend only       |
-+----------------------+       +---------------------------+       +----------------------------+
-  </pre>
+      <!-- Card 4: Platform Runtime & Git -->
+      <section class="card glass">
+        <div class="card-header">
+          <span class="card-icon">💻</span>
+          <h2>Environment & Git Source</h2>
+        </div>
+        <div class="card-body">
+          <div class="stat-row">
+            <span class="stat-label">Git Commit ID</span>
+            <code class="mono" th:text="${info.gitCommitId}">unknown</code>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Build Timestamp</span>
+            <span class="info-text text-sm" th:text="${info.buildTimestamp}">unknown</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Host OS Distro</span>
+            <span class="info-text" th:text="${info.operatingSystem}">CentOS Stream 9</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Container Hostname</span>
+            <span class="info-text" th:text="${info.hostname}">qa.carzonrent</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">System Time UTC</span>
+            <span class="info-text text-sm" th:text="${info.currentTime}">2026-07-13T00:00:00Z</span>
+          </div>
+        </div>
+      </section>
+    </div>
 
-  <h3>Backend Isolation</h3>
-  <p>Spring Boot listens only on 127.0.0.1:8085 inside the container. Apache is the only public entry point.</p>
+    <!-- Active Endpoints -->
+    <section class="endpoints-section glass">
+      <h3>Operational Service Endpoints</h3>
+      <p class="description">Enterprise metrics and health check paths routed transparently via Apache gateway.</p>
+      <div class="button-group">
+        <a href="/health" class="btn btn-health">
+          <span class="btn-icon">❤️</span>
+          <span>Gateway Health</span>
+        </a>
+        <a href="/info" class="btn btn-info">
+          <span class="btn-icon">ℹ️</span>
+          <span>Info Metadata</span>
+        </a>
+        <a href="/metrics" class="btn btn-metrics">
+          <span class="btn-icon">📊</span>
+          <span>JVM Metrics</span>
+        </a>
+        <a href="/prometheus" class="btn btn-prometheus">
+          <span class="btn-icon">🔥</span>
+          <span>Prometheus Scraper</span>
+        </a>
+      </div>
+    </section>
 
-  <hr>
-  <center>
-    <small>Carzonrent Platform Engineering - QA deployment - Build <span th:text="${info.buildVersion}">2.0.1</span></small>
-  </center>
+    <!-- Architecture Block -->
+    <section class="arch-section glass">
+      <h3>Rootless Reverse Proxy Architecture</h3>
+      <div class="arch-flow">
+        <div class="flow-node">
+          <div class="node-icon">🌐</div>
+          <div class="node-name">Client Browser</div>
+          <div class="node-details">http://qa.carzonrent.com</div>
+        </div>
+        <div class="flow-arrow">──────▶</div>
+        <div class="flow-node highlight">
+          <div class="node-icon">🛡️</div>
+          <div class="node-name">Apache (8080)</div>
+          <div class="node-details">Rootless Web Server Gateway</div>
+        </div>
+        <div class="flow-arrow">──Proxy──▶</div>
+        <div class="flow-node">
+          <div class="node-icon">☕</div>
+          <div class="node-name">Spring Boot (8085)</div>
+          <div class="node-details">127.0.0.1 (Internal Loopback)</div>
+        </div>
+      </div>
+      <p class="arch-note"><strong>Security Enforcement:</strong> Spring Boot binds strictly to loopback to isolate the Java runtime. Apache serves as the single public entry point, stripping capabilities, applying headers, and terminating timeouts safely.</p>
+    </section>
+  </main>
+
+  <footer>
+    <div class="footer-container">
+      <p>Carzonrent Pvt Ltd &bull; Platform Engineering Division</p>
+      <p class="build-version">System Version: <span th:text="${info.buildVersion}">2.0.0</span> &bull; Engine Status: PASS</p>
+    </div>
+  </footer>
 </body>
 </html>

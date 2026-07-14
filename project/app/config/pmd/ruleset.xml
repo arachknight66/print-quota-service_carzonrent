@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="Carzonrent QA Dashboard"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
+    <description>Focused CI rules for the Phase 3 QA dashboard pipeline.</description>
+
+    <rule ref="category/java/bestpractices.xml/UnusedPrivateMethod"/>
+    <rule ref="category/java/errorprone.xml/EmptyCatchBlock">
+        <properties>
+            <property name="allowCommentedBlocks" value="true"/>
+        </properties>
+    </rule>
+    <rule ref="category/java/errorprone.xml/AvoidDuplicateLiterals">
+        <properties>
+            <property name="skipAnnotations" value="true"/>
+        </properties>
+    </rule>
+</ruleset>

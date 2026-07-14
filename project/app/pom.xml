@@ -19,6 +19,13 @@
 
     <properties>
         <java.version>21</java.version>
+        <jacoco.minimum.instruction.coverage>0.10</jacoco.minimum.instruction.coverage>
+        <cyclonedx-maven-plugin.version>2.8.2</cyclonedx-maven-plugin.version>
+        <maven-checkstyle-plugin.version>3.3.1</maven-checkstyle-plugin.version>
+        <maven-pmd-plugin.version>3.22.0</maven-pmd-plugin.version>
+        <spotbugs-maven-plugin.version>4.8.6.6</spotbugs-maven-plugin.version>
+        <jacoco-maven-plugin.version>0.8.12</jacoco-maven-plugin.version>
+        <owasp-dependency-check.version>10.0.4</owasp-dependency-check.version>
     </properties>
 
     <dependencies>
@@ -32,6 +39,18 @@
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
@@ -42,7 +61,179 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>build-info</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>io.github.git-commit-id</groupId>
+                <artifactId>git-commit-id-maven-plugin</artifactId>
+                <version>9.0.1</version>
+                <executions>
+                    <execution>
+                        <id>git-info</id>
+                        <goals>
+                            <goal>revision</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <failOnNoGitDirectory>false</failOnNoGitDirectory>
+                    <generateGitPropertiesFile>true</generateGitPropertiesFile>
+                    <generateGitPropertiesFilename>${project.build.outputDirectory}/git.properties</generateGitPropertiesFilename>
+                    <includeOnlyProperties>
+                        <includeOnlyProperty>^git.branch$</includeOnlyProperty>
+                        <includeOnlyProperty>^git.commit.id.abbrev$</includeOnlyProperty>
+                        <includeOnlyProperty>^git.commit.id.full$</includeOnlyProperty>
+                        <includeOnlyProperty>^git.commit.time$</includeOnlyProperty>
+                    </includeOnlyProperties>
+                </configuration>
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>ci-quality</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.jacoco</groupId>
+                        <artifactId>jacoco-maven-plugin</artifactId>
+                        <version>${jacoco-maven-plugin.version}</version>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>prepare-agent</goal>
+                                </goals>
+                            </execution>
+                            <execution>
+                                <id>report</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>report</goal>
+                                </goals>
+                            </execution>
+                            <execution>
+                                <id>check</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>check</goal>
+                                </goals>
+                                <configuration>
+                                    <rules>
+                                        <rule>
+                                            <element>BUNDLE</element>
+                                            <limits>
+                                                <limit>
+                                                    <counter>INSTRUCTION</counter>
+                                                    <value>COVEREDRATIO</value>
+                                                    <minimum>${jacoco.minimum.instruction.coverage}</minimum>
+                                                </limit>
+                                            </limits>
+                                        </rule>
+                                    </rules>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-checkstyle-plugin</artifactId>
+                        <version>${maven-checkstyle-plugin.version}</version>
+                        <configuration>
+                            <configLocation>config/checkstyle/checkstyle.xml</configLocation>
+                            <consoleOutput>true</consoleOutput>
+                            <failsOnError>true</failsOnError>
+                            <includeTestSourceDirectory>true</includeTestSourceDirectory>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>checkstyle</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>check</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-pmd-plugin</artifactId>
+                        <version>${maven-pmd-plugin.version}</version>
+                        <configuration>
+                            <failOnViolation>true</failOnViolation>
+                            <printFailingErrors>true</printFailingErrors>
+                            <rulesets>
+                                <ruleset>config/pmd/ruleset.xml</ruleset>
+                            </rulesets>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>pmd</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>check</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>com.github.spotbugs</groupId>
+                        <artifactId>spotbugs-maven-plugin</artifactId>
+                        <version>${spotbugs-maven-plugin.version}</version>
+                        <configuration>
+                            <effort>Max</effort>
+                            <threshold>High</threshold>
+                            <xmlOutput>true</xmlOutput>
+                            <failOnError>false</failOnError>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>spotbugs</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>check</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.cyclonedx</groupId>
+                        <artifactId>cyclonedx-maven-plugin</artifactId>
+                        <version>${cyclonedx-maven-plugin.version}</version>
+                        <executions>
+                            <execution>
+                                <id>sbom</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>makeAggregateBom</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.owasp</groupId>
+                        <artifactId>dependency-check-maven</artifactId>
+                        <version>${owasp-dependency-check.version}</version>
+                        <configuration>
+                            <skip>${dependency-check.skip}</skip>
+                            <failBuildOnCVSS>7</failBuildOnCVSS>
+                            <formats>
+                                <format>HTML</format>
+                                <format>JSON</format>
+                            </formats>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+            <properties>
+                <dependency-check.skip>true</dependency-check.skip>
+            </properties>
+        </profile>
+    </profiles>
 </project>

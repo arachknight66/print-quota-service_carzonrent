@@ -25,7 +25,8 @@ class DashboardControllerTest {
         mockMvc.perform(get("/").header("X-Forwarded-For", "127.0.0.1"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("dashboard"))
-                .andExpect(content().string(containsString("Legacy HTML Operations Page")));
+                .andExpect(content().string(containsString("Carzonrent Platform")))
+                .andExpect(content().string(containsString("/style.css")));
     }
 
     @Test
@@ -34,16 +35,32 @@ class DashboardControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("UP"));
 
+        mockMvc.perform(get("/health/readiness"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("UP"));
+
+        mockMvc.perform(get("/health/liveness"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("UP"));
+
         mockMvc.perform(get("/info").header("X-Forwarded-For", "127.0.0.1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.environment").value("QA"))
                 .andExpect(jsonPath("$.reverseProxyStatus").value("ACTIVE"))
-                .andExpect(jsonPath("$.backendAddress").value("127.0.0.1:8085"));
+                .andExpect(jsonPath("$.backendAddress").value("127.0.0.1:8085"))
+                .andExpect(jsonPath("$.gitCommitId").exists())
+                .andExpect(jsonPath("$.dockerImageTag").exists());
+
+        mockMvc.perform(get("/actuator/info"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.app").exists())
+                .andExpect(jsonPath("$.git").exists());
     }
 
     @Test
     void unknownRouteReturns404() throws Exception {
         mockMvc.perform(get("/does-not-exist"))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.correlationId").exists());
     }
 }

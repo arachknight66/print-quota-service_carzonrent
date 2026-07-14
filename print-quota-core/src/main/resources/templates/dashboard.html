@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carzonrent Enterprise QA Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+</head>
+<body>
+    <div class="background-glow glow-1"></div>
+    <div class="background-glow glow-2"></div>
+
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo-area">
+                <div class="logo-icon">C</div>
+                <div class="logo-text">
+                    <h1>Carzonrent</h1>
+                    <span>Enterprise Infrastructure QA Panel</span>
+                </div>
+            </div>
+            <div class="server-time">
+                <span class="pulse-dot"></span>
+                <span class="time-label">Server Time:</span>
+                <span class="time-value" th:text="${currentTime}">2026-07-13 15:30:00</span>
+            </div>
+        </header>
+
+        <!-- Infrastructure Banner -->
+        <section class="banner-card">
+            <div class="banner-content">
+                <h2>Phase 1 Deployment Architecture Active</h2>
+                <p>The staging backend is containerized under CentOS Stream 9. The backend binds exclusively to loopback interface <code>127.0.0.1:8085</code> and is reverse proxied through Apache HTTP Server on port <code>80</code>.</p>
+            </div>
+            <div class="architecture-badge">
+                <span class="badge-title">TARGET GATEWAY</span>
+                <span class="badge-value">qa.carzonrent.com</span>
+            </div>
+        </section>
+
+        <!-- Status & Metrics Grid -->
+        <div class="metrics-grid">
+            <!-- Metric Card 1: Environment -->
+            <div class="metric-card">
+                <div class="card-icon env-icon">⚙️</div>
+                <div class="card-info">
+                    <h3>Environment</h3>
+                    <p class="metric-value" th:text="${environment}">QA (Phase 1)</p>
+                </div>
+            </div>
+
+            <!-- Metric Card 2: Hostname -->
+            <div class="metric-card">
+                <div class="card-icon host-icon">🖥️</div>
+                <div class="card-info">
+                    <h3>Hostname</h3>
+                    <p class="metric-value" th:text="${hostname}">qa.carzonrent</p>
+                </div>
+            </div>
+
+            <!-- Metric Card 3: OS -->
+            <div class="metric-card">
+                <div class="card-icon os-icon">🐧</div>
+                <div class="card-info">
+                    <h3>Operating System</h3>
+                    <p class="metric-value" th:text="${os}">CentOS Stream 9</p>
+                </div>
+            </div>
+
+            <!-- Metric Card 4: Java Version -->
+            <div class="metric-card">
+                <div class="card-icon java-icon">☕</div>
+                <div class="card-info">
+                    <h3>Java Platform</h3>
+                    <p class="metric-value" th:text="${javaVersion}">Java 21</p>
+                </div>
+            </div>
+
+            <!-- Metric Card 5: Spring Boot Version -->
+            <div class="metric-card">
+                <div class="card-icon spring-icon">🌱</div>
+                <div class="card-info">
+                    <h3>Spring Boot</h3>
+                    <p class="metric-value">v<span th:text="${springBootVersion}">3.3.0</span></p>
+                </div>
+            </div>
+
+            <!-- Metric Card 6: Backend Port -->
+            <div class="metric-card">
+                <div class="card-icon port-icon">🔒</div>
+                <div class="card-info">
+                    <h3>Backend Address</h3>
+                    <p class="metric-value" th:text="${backendAddress}">http://127.0.0.1:8085/</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Services Status -->
+        <div class="services-section">
+            <h2>System Services</h2>
+            <div class="services-grid">
+                <!-- Service: Apache -->
+                <div class="service-status-card">
+                    <div class="service-header">
+                        <h3>Apache HTTP Server</h3>
+                        <span class="status-indicator-dot" th:classappend="${apacheStatusClass}"></span>
+                    </div>
+                    <div class="service-body">
+                        <div class="data-row">
+                            <span class="data-label">External Port:</span>
+                            <span class="data-value highlight">80</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">Role:</span>
+                            <span class="data-value">Reverse Proxy / Gateway</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">Status:</span>
+                            <span class="data-value status-badge" th:classappend="${apacheStatusClass}" th:text="${apacheStatus}">RUNNING</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Service: Reverse Proxy -->
+                <div class="service-status-card">
+                    <div class="service-header">
+                        <h3>Proxy Routing</h3>
+                        <span class="status-indicator-dot" th:classappend="${reverseProxyClass}"></span>
+                    </div>
+                    <div class="service-body">
+                        <div class="data-row">
+                            <span class="data-label">Directive:</span>
+                            <span class="data-value">ProxyPass / -> 127.0.0.1:8085</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">Gateway:</span>
+                            <span class="data-value highlight" th:text="${reverseProxyStatus}">ACTIVE</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">SSL Engine:</span>
+                            <span class="data-value">On (Passthrough)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Service: Deployment Status -->
+                <div class="service-status-card">
+                    <div class="service-header">
+                        <h3>Deployment Health</h3>
+                        <span class="status-indicator-dot" th:classappend="${deploymentClass}"></span>
+                    </div>
+                    <div class="service-body">
+                        <div class="data-row">
+                            <span class="data-label">Topology:</span>
+                            <span class="data-value">Co-located Single Container</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">Health Probe:</span>
+                            <span class="data-value highlight">Docker HEALTHCHECK Active</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">Status:</span>
+                            <span class="data-value status-badge" th:classappend="${deploymentClass}" th:text="${deploymentStatus}">HEALTHY</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>&copy; 2026 Carzonrent India Private Limited. All rights reserved. Authorized access only.</p>
+        </footer>
+    </div>
+</body>
+</html>

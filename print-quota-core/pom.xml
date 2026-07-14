@@ -36,6 +36,19 @@
             </exclusions>
         </dependency>
 
+        <!-- Thymeleaf Template Engine -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-thymeleaf</artifactId>
+        </dependency>
+
+        <!-- H2 Database for QA Environment Mocking -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
         <!-- Jetty Web Server Integration -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

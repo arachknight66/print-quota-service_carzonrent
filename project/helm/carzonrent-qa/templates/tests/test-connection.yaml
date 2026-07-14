@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "carzonrent-qa.fullname" . }}-test-connection"
+  namespace: {{ include "carzonrent-qa.namespace" . }}
+  labels:
+    {{- include "carzonrent-qa.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: wget
+      image: busybox:1.36.0
+      command: ['wget']
+      args: ['-S', '-O-', 'http://{{ include "carzonrent-qa.fullname" . }}:{{ .Values.service.port }}/health']
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        capabilities:
+          drop:
+            - ALL
+  restartPolicy: Never

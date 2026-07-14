@@ -1,0 +1,14 @@
+apiVersion: v2
+name: carzonrent-qa
+description: Carzonrent enterprise QA deployment with Apache reverse proxy and private Spring Boot backend
+type: application
+version: 0.1.0
+appVersion: "2.0.0"
+keywords:
+  - carzonrent
+  - qa
+  - apache
+  - spring-boot
+  - kubernetes
+maintainers:
+  - name: Carzonrent Platform Engineering

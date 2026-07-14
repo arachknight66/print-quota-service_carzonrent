@@ -5,7 +5,7 @@ import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.ldap.core.LdapTemplate;
 import org.springframework.stereotype.Component;
-
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import javax.naming.directory.SearchControls;
 import java.time.Duration;
 import java.time.Instant;
@@ -14,6 +14,7 @@ import java.time.Instant;
  * Health indicator monitoring Active Directory / LDAP connection status and response times.
  */
 @Component
+@ConditionalOnProperty(name = "management.health.ldap.enabled", havingValue = "true", matchIfMissing = true)
 public class LdapHealthIndicator implements HealthIndicator {
 
     private final LdapTemplate ldapTemplate;

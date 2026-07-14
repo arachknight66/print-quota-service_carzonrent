@@ -1,0 +1,14 @@
+{{- if .Values.podDisruptionBudget.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "carzonrent-qa.fullname" . }}
+  namespace: {{ include "carzonrent-qa.namespace" . }}
+  labels:
+    {{- include "carzonrent-qa.labels" . | nindent 4 }}
+spec:
+  minAvailable: {{ .Values.podDisruptionBudget.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "carzonrent-qa.selectorLabels" . | nindent 6 }}
+{{- end }}
