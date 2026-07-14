@@ -1,10 +1,13 @@
 package com.printkeep.quota.core.config;
 
 import com.printkeep.quota.core.identity.ldap.config.LdapProperties;
+import com.printkeep.quota.core.security.ClientCertAuthFilter;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.Ordered;
 import org.springframework.ldap.core.support.BaseLdapPathContextSource;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
@@ -33,7 +36,8 @@ public class SecurityConfig {
                         .requestMatchers("/actuator/health/liveness", "/actuator/health/readiness").permitAll()
                         .requestMatchers("/api/v1/admin/**").hasRole(ADMIN_ROLE)
                         .requestMatchers("/actuator/**").hasRole(ADMIN_ROLE)
-                        .anyRequest().permitAll())
+                        .requestMatchers("/printers/**").permitAll()
+                        .anyRequest().authenticated())
                 .httpBasic(Customizer.withDefaults())
                 .build();
     }
@@ -45,6 +49,17 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authorize -> authorize.anyRequest().permitAll())
                 .build();
+    }
+
+    @Bean
+    @Profile("prod")
+    public FilterRegistrationBean<ClientCertAuthFilter> clientCertAuthFilterRegistration() {
+        final FilterRegistrationBean<ClientCertAuthFilter> registration = new FilterRegistrationBean<>();
+        registration.setFilter(new ClientCertAuthFilter());
+        registration.addUrlPatterns("/printers/*");
+        registration.setName("clientCertAuthFilter");
+        registration.setOrder(Ordered.HIGHEST_PRECEDENCE);
+        return registration;
     }
 
     @Bean

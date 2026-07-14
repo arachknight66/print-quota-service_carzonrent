@@ -1,0 +1,95 @@
+version: '3.9'
+
+services:
+  print-quota-db:
+    image: postgres:16-alpine
+    container_name: print-quota-db
+    environment:
+      POSTGRES_DB: print_quota_db
+      POSTGRES_USER: print_quota_user
+      POSTGRES_PASSWORD: print_quota_password
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U print_quota_user -d print_quota_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - print-quota-network
+    restart: unless-stopped
+
+  print-quota-ldap:
+    image: osixia/openldap:1.5.0
+    container_name: print-quota-ldap
+    environment:
+      LDAP_ORGANISATION: "Carzonrent"
+      LDAP_DOMAIN: "carzonrent.local"
+      LDAP_ADMIN_PASSWORD: ldap_admin_password
+    ports:
+      - "389:389"
+    volumes:
+      - ldap_data:/var/lib/ldap
+      - ldap_config:/etc/ldap/slapd.d
+    networks:
+      - print-quota-network
+    restart: unless-stopped
+
+  print-quota-pgadmin:
+    image: dpage/pgadmin4:8.8
+    container_name: print-quota-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@carzonrent.local
+      PGADMIN_DEFAULT_PASSWORD: admin_password
+    ports:
+      - "5050:80"
+    depends_on:
+      print-quota-db:
+        condition: service_healthy
+    networks:
+      - print-quota-network
+    restart: unless-stopped
+
+  qa-carzonrent:
+    image: printkeep-print-quota-app:latest
+    container_name: qa.carzonrent
+    depends_on:
+      print-quota-db:
+        condition: service_healthy
+      print-quota-ldap:
+        condition: service_started
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://print-quota-db:5432/print_quota_db
+      SPRING_DATASOURCE_USERNAME: print_quota_user
+      SPRING_DATASOURCE_PASSWORD: print_quota_password
+      SPRING_LDAP_URLS: ldap://print-quota-ldap:389/dc=carzonrent,dc=local
+      SPRING_LDAP_USERNAME: cn=admin,dc=carzonrent,dc=local
+      SPRING_LDAP_PASSWORD: ldap_admin_password
+      SPRING_PROFILES_ACTIVE: prod
+      JAVA_OPTS: "-XX:MaxRAMPercentage=70 -XX:+ExitOnOutOfMemoryError"
+    ports:
+      - "80:8080"
+      - "8085:8085"
+    volumes:
+      - ./app/config:/config:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8085/health/liveness"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    networks:
+      - print-quota-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  ldap_data:
+  ldap_config:
+
+networks:
+  print-quota-network:
+    driver: bridge

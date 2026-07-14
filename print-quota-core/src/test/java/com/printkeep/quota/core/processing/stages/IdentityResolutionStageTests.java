@@ -2,6 +2,8 @@ package com.printkeep.quota.core.processing.stages;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.printkeep.quota.codec.model.IppAttribute;
@@ -43,7 +45,7 @@ class IdentityResolutionStageTests {
         final IppAttributeGroup opGroup = new IppAttributeGroup(IppTag.OPERATION_ATTRIBUTES, List.of(reqUser));
         final IppPacket packet = new IppPacket((byte) 2, (byte) 0, (short) 0x0002, 1, List.of(opGroup), new byte[0]);
 
-        final PipelineContext context = new PipelineContext(packet, "corr-123", "localhost");
+        final PipelineContext context = new PipelineContext(packet, "corr-123", "localhost", "jdoe");
         stage.process(context);
 
         assertThat(context.getUser()).isEqualTo(user);
@@ -62,9 +64,68 @@ class IdentityResolutionStageTests {
         final IppAttributeGroup opGroup = new IppAttributeGroup(IppTag.OPERATION_ATTRIBUTES, List.of(reqUser));
         final IppPacket packet = new IppPacket((byte) 2, (byte) 0, (short) 0x0002, 1, List.of(opGroup), new byte[0]);
 
-        final PipelineContext context = new PipelineContext(packet, "corr-123", "localhost");
+        final PipelineContext context = new PipelineContext(packet, "corr-123", "localhost", "disabled_user");
         stage.process(context);
 
         assertThat(context.getDecision()).isEqualTo(IppDecision.REJECT_DISABLED_USER);
+    }
+
+    @Test
+    void testMixedCaseCertificateCommonNameMatchesUsername() {
+        final User user = new User();
+        user.setDomainUsername("company\\jdoe");
+        user.setActive(true);
+
+        when(identityService.findUser("jdoe")).thenReturn(Optional.of(user));
+
+        final IppPacket packet = packetForUsername("jdoe");
+        final PipelineContext context = new PipelineContext(packet, "corr-123", "10.0.0.7", "JDOE");
+        stage.process(context);
+
+        assertThat(context.getUser()).isEqualTo(user);
+        assertThat(context.getDecision()).isNull();
+    }
+
+    @Test
+    void testCertificateUsernameMismatchRejectsBeforeLookup() {
+        final IppPacket packet = packetForUsername("jdoe");
+        final PipelineContext context = new PipelineContext(packet, "corr-123", "10.0.0.7", "asmith");
+        stage.process(context);
+
+        assertThat(context.getDecision()).isEqualTo(IppDecision.REJECT_UNKNOWN_USER);
+        assertThat(context.getReason()).contains("does not match");
+        verify(identityService, never()).findUser("jdoe");
+    }
+
+    @Test
+    void testMissingCertificateCommonNameRejectsBeforeLookup() {
+        final IppPacket packet = packetForUsername("jdoe");
+        final PipelineContext context = new PipelineContext(packet, "corr-123", "10.0.0.7", null);
+        stage.process(context);
+
+        assertThat(context.getDecision()).isEqualTo(IppDecision.REJECT_INVALID_REQUEST);
+        assertThat(context.getReason()).contains("Missing verified client certificate identity");
+        verify(identityService, never()).findUser("jdoe");
+    }
+
+    @Test
+    void testEmptyCertificateCommonNameRejectsBeforeLookup() {
+        final IppPacket packet = packetForUsername("jdoe");
+        final PipelineContext context = new PipelineContext(packet, "corr-123", "10.0.0.7", " ");
+        stage.process(context);
+
+        assertThat(context.getDecision()).isEqualTo(IppDecision.REJECT_INVALID_REQUEST);
+        assertThat(context.getReason()).contains("Missing verified client certificate identity");
+        verify(identityService, never()).findUser("jdoe");
+    }
+
+    private static IppPacket packetForUsername(final String username) {
+        final IppAttribute reqUser = new IppAttribute(
+                "requesting-user-name",
+                IppTag.NAME_WITHOUT_LANGUAGE,
+                List.of(username)
+        );
+        final IppAttributeGroup opGroup = new IppAttributeGroup(IppTag.OPERATION_ATTRIBUTES, List.of(reqUser));
+        return new IppPacket((byte) 2, (byte) 0, (short) 0x0002, 1, List.of(opGroup), new byte[0]);
     }
 }

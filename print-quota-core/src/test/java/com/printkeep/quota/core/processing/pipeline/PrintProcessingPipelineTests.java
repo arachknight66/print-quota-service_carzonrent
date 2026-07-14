@@ -37,7 +37,7 @@ class PrintProcessingPipelineTests {
         final IppPacket packet = new IppPacket((byte) 2, (byte) 0, (short) 0x0002, 1, List.of(), new byte[0]);
 
         // Mock stages doing nothing (succeeding)
-        final PipelineResult result = pipeline.process(packet, "corr-123", "localhost");
+        final PipelineResult result = pipeline.process(packet, "corr-123", "localhost", "jdoe");
 
         assertThat(result.decision()).isEqualTo(IppDecision.ALLOW);
         assertThat(result.correlationId()).isEqualTo("corr-123");
@@ -56,7 +56,7 @@ class PrintProcessingPipelineTests {
             return null;
         }).when(stage1).process(any(PipelineContext.class));
 
-        final PipelineResult result = pipeline.process(packet, "corr-456", "localhost");
+        final PipelineResult result = pipeline.process(packet, "corr-456", "localhost", "jdoe");
 
         assertThat(result.decision()).isEqualTo(IppDecision.REJECT_INVALID_REQUEST);
         assertThat(result.reason()).isEqualTo("Malformed parameters");

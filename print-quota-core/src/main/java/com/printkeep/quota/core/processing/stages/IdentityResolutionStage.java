@@ -8,9 +8,12 @@ import com.printkeep.quota.core.model.User;
 import com.printkeep.quota.core.processing.decision.IppDecision;
 import com.printkeep.quota.core.processing.pipeline.PipelineContext;
 import com.printkeep.quota.core.processing.pipeline.PipelineStage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
+import java.time.Instant;
 import java.util.Optional;
 
 /**
@@ -19,6 +22,8 @@ import java.util.Optional;
 @Component
 @Order(2)
 public class IdentityResolutionStage implements PipelineStage {
+
+    private static final Logger log = LoggerFactory.getLogger(IdentityResolutionStage.class);
 
     private final IdentityService identityService;
 
@@ -45,6 +50,21 @@ public class IdentityResolutionStage implements PipelineStage {
         }
 
         final String username = userAttrOpt.get().getValue().toString();
+        final String verifiedClientCN = context.getVerifiedClientCN();
+        if (verifiedClientCN == null || verifiedClientCN.isBlank()) {
+            context.setDecision(IppDecision.REJECT_INVALID_REQUEST);
+            context.setReason("Missing verified client certificate identity");
+            return;
+        }
+
+        if (!verifiedClientCN.equalsIgnoreCase(username)) {
+            log.warn("[CorrID: {}] Client certificate identity mismatch. certificateCN={}, claimedUsername={}, sourceIp={}, timestamp={}",
+                    context.getCorrelationId(), verifiedClientCN, username, context.getClientHostname(), Instant.now());
+            context.setDecision(IppDecision.REJECT_UNKNOWN_USER);
+            context.setReason("Client certificate identity does not match requesting-user-name");
+            return;
+        }
+
         final Optional<User> userOpt = identityService.findUser(username);
 
         if (userOpt.isEmpty()) {
