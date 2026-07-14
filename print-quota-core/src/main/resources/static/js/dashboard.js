@@ -208,11 +208,11 @@
         if (theme === 'dark') {
             els.body.classList.remove('light-mode');
             els.body.classList.add('dark-mode');
-            els.themeToggle.innerHTML = '<i class="fa-solid fa-sun text-warning"></i>';
+            replaceIcon(els.themeToggle, ['fa-solid', 'fa-sun', 'text-warning']);
         } else {
             els.body.classList.remove('dark-mode');
             els.body.classList.add('light-mode');
-            els.themeToggle.innerHTML = '<i class="fa-solid fa-moon"></i>';
+            replaceIcon(els.themeToggle, ['fa-solid', 'fa-moon']);
         }
     }
 
@@ -477,7 +477,7 @@
     // -------------------------------------------------------------
     async function loadPrintQueueView() {
         const queueTbody = document.getElementById('print-queue-tbody');
-        queueTbody.innerHTML = '';
+        clearElement(queueTbody);
         
         // Mock queue data
         const mockQueue = [
@@ -488,28 +488,27 @@
         document.getElementById('queue-count').textContent = `${mockQueue.length} Active Jobs`;
 
         if (!mockQueue.length) {
-            queueTbody.innerHTML = `<tr><td colspan="10" class="text-center text-muted py-4">No active print jobs in queue.</td></tr>`;
+            appendEmptyRow(queueTbody, 10, 'No active print jobs in queue.', 'text-center text-muted py-4');
             return;
         }
 
         mockQueue.forEach(job => {
             const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td class="fw-semibold">#${job.id}</td>
-                <td>${job.timestamp}</td>
-                <td class="font-monospace">${job.corrId}</td>
-                <td>${job.user}</td>
-                <td>${job.doc}</td>
-                <td><span class="badge bg-secondary-subtle">${job.printer}</span></td>
-                <td class="text-end fw-semibold">${job.pages}</td>
-                <td>${job.size}</td>
-                <td><span class="badge ${job.status === 'PRINTING' ? 'bg-primary' : 'bg-warning'}">${job.status}</span></td>
-                <td>
-                    <button class="btn btn-xs btn-outline-danger py-0 px-2 btn-cancel-job" data-id="${job.id}">
-                        <i class="fa-solid fa-circle-stop"></i> Terminate
-                    </button>
-                </td>
-            `;
+            appendTextCell(tr, `#${job.id}`, 'fw-semibold');
+            appendTextCell(tr, job.timestamp);
+            appendTextCell(tr, job.corrId, 'font-monospace');
+            appendTextCell(tr, job.user);
+            appendTextCell(tr, job.doc);
+            appendBadgeCell(tr, job.printer, 'bg-secondary-subtle');
+            appendTextCell(tr, job.pages, 'text-end fw-semibold');
+            appendTextCell(tr, job.size);
+            appendBadgeCell(tr, job.status, job.status === 'PRINTING' ? 'bg-primary' : 'bg-warning');
+            const actionCell = document.createElement('td');
+            const button = appendActionButton(actionCell, 'btn btn-xs btn-outline-danger py-0 px-2 btn-cancel-job', 'Terminate', {
+                id: job.id
+            });
+            prependIcon(button, ['fa-solid', 'fa-circle-stop']);
+            tr.appendChild(actionCell);
             queueTbody.appendChild(tr);
         });
 
@@ -549,12 +548,54 @@
     function appendActionButton(cell, className, text, dataAttributes = {}) {
         const button = document.createElement('button');
         button.className = className;
+        button.type = 'button';
         Object.entries(dataAttributes).forEach(([key, value]) => {
             button.setAttribute(`data-${key}`, value == null ? '' : String(value));
         });
         button.textContent = text;
         cell.appendChild(button);
         return button;
+    }
+
+    function clearElement(element) {
+        element.replaceChildren();
+    }
+
+    function appendEmptyRow(tbody, colspan, message, className = 'text-center py-4 text-muted') {
+        const row = document.createElement('tr');
+        const cell = document.createElement('td');
+        cell.colSpan = colspan;
+        cell.className = className;
+        cell.textContent = message;
+        row.appendChild(cell);
+        tbody.appendChild(row);
+    }
+
+    function createIcon(classes) {
+        const icon = document.createElement('i');
+        icon.className = classes.join(' ');
+        icon.setAttribute('aria-hidden', 'true');
+        return icon;
+    }
+
+    function replaceIcon(container, classes) {
+        container.replaceChildren(createIcon(classes));
+    }
+
+    function prependIcon(button, classes) {
+        const icon = createIcon(classes);
+        button.prepend(document.createTextNode(' '));
+        button.prepend(icon);
+    }
+
+    function bindOnce(elementId, eventName, handler) {
+        const element = document.getElementById(elementId);
+        const marker = `bound${eventName}`;
+        if (element.dataset[marker] === 'true') {
+            return;
+        }
+        element.addEventListener(eventName, handler);
+        element.dataset[marker] = 'true';
     }
 
     async function loadUsersView() {
@@ -570,10 +611,10 @@
 
         // Render Users
         const tbody = document.getElementById('users-tbody');
-        tbody.innerHTML = '';
+        clearElement(tbody);
 
         if (!data.content || !data.content.length) {
-            tbody.innerHTML = `<tr><td colspan="10" class="text-center text-muted py-4">No user records matched query parameters.</td></tr>`;
+            appendEmptyRow(tbody, 10, 'No user records matched query parameters.', 'text-center text-muted py-4');
             return;
         }
 
@@ -717,10 +758,10 @@
         const data = await apiRequest(url);
         
         const tbody = document.getElementById('quota-tbody');
-        tbody.innerHTML = '';
+        clearElement(tbody);
 
         if (!data.content || !data.content.length) {
-            tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-4">No quota details matches query.</td></tr>`;
+            appendEmptyRow(tbody, 6, 'No quota details matches query.', 'text-center text-muted py-4');
             return;
         }
 
@@ -845,7 +886,7 @@
         });
 
         const tbody = document.getElementById('departments-tbody');
-        tbody.innerHTML = '';
+        clearElement(tbody);
 
         Object.keys(depts).forEach(deptName => {
             const d = depts[deptName];
@@ -902,7 +943,7 @@
         state.printers = printers;
 
         const grid = document.getElementById('printers-grid');
-        grid.innerHTML = '';
+        clearElement(grid);
 
         printers.forEach(p => {
             const col = document.createElement('div');
@@ -1019,13 +1060,13 @@
         });
         
         // Setup report button endpoints
-        document.getElementById('btn-report-download-csv').onclick = () => {
+        bindOnce('btn-report-download-csv', 'click', () => {
             window.open('/api/v1/admin/reports/export/logs?format=csv', '_blank');
-        };
-        
-        document.getElementById('btn-report-download-excel').onclick = () => {
+        });
+
+        bindOnce('btn-report-download-excel', 'click', () => {
             window.open('/api/v1/admin/reports/export/logs?format=excel', '_blank');
-        };
+        });
     }
 
     // Report preview action
@@ -1042,10 +1083,10 @@
             const logsData = await apiRequest(url);
             
             const tbody = document.getElementById('report-preview-tbody');
-            tbody.innerHTML = '';
+            clearElement(tbody);
 
             if (!logsData.content || !logsData.content.length) {
-                tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4">No transactions recorded for the range.</td></tr>`;
+                appendEmptyRow(tbody, 7, 'No transactions recorded for the range.', 'text-center py-4');
             } else {
                 logsData.content.forEach(log => {
                     const statusClass = log.status === 'SUCCESS' ? 'bg-success-subtle' : 'bg-danger-subtle';
@@ -1083,7 +1124,7 @@
         state.scheduledJobs = jobs;
 
         const tbody = document.getElementById('scheduled-jobs-tbody');
-        tbody.innerHTML = '';
+        clearElement(tbody);
 
         jobs.forEach(job => {
             const tr = document.createElement('tr');
@@ -1173,36 +1214,21 @@
 
         // HTTP Inbound request log table mock
         const httpTbody = document.getElementById('metrics-http-tbody');
-        httpTbody.innerHTML = `
-            <tr>
-                <td class="font-monospace fw-semibold">/api/v1/admin/dashboard</td>
-                <td><span class="badge bg-secondary">GET</span></td>
-                <td class="fw-semibold">1,248 invocations</td>
-                <td>12ms</td>
-                <td><span class="badge bg-success-subtle">NORMAL</span></td>
-            </tr>
-            <tr>
-                <td class="font-monospace fw-semibold">/printers/{printerName}</td>
-                <td><span class="badge bg-primary">POST</span></td>
-                <td class="fw-semibold">452 invocations</td>
-                <td>82ms</td>
-                <td><span class="badge bg-success-subtle">NORMAL</span></td>
-            </tr>
-            <tr>
-                <td class="font-monospace fw-semibold">/api/v1/admin/users</td>
-                <td><span class="badge bg-secondary">GET</span></td>
-                <td class="fw-semibold">154 invocations</td>
-                <td>24ms</td>
-                <td><span class="badge bg-success-subtle">NORMAL</span></td>
-            </tr>
-            <tr>
-                <td class="font-monospace fw-semibold">/api/v1/admin/sync</td>
-                <td><span class="badge bg-primary">POST</span></td>
-                <td class="fw-semibold">12 invocations</td>
-                <td>1.4s</td>
-                <td><span class="badge bg-warning-subtle text-dark">SLOW</span></td>
-            </tr>
-        `;
+        clearElement(httpTbody);
+        [
+            ['/api/v1/admin/dashboard', 'GET', '1,248 invocations', '12ms', 'NORMAL', 'bg-secondary', 'bg-success-subtle'],
+            ['/printers/{printerName}', 'POST', '452 invocations', '82ms', 'NORMAL', 'bg-primary', 'bg-success-subtle'],
+            ['/api/v1/admin/users', 'GET', '154 invocations', '24ms', 'NORMAL', 'bg-secondary', 'bg-success-subtle'],
+            ['/api/v1/admin/sync', 'POST', '12 invocations', '1.4s', 'SLOW', 'bg-primary', 'bg-warning-subtle text-dark']
+        ].forEach(([endpoint, method, invocations, latency, status, methodClass, statusClass]) => {
+            const tr = document.createElement('tr');
+            appendTextCell(tr, endpoint, 'font-monospace fw-semibold');
+            appendBadgeCell(tr, method, methodClass);
+            appendTextCell(tr, invocations, 'fw-semibold');
+            appendTextCell(tr, latency);
+            appendBadgeCell(tr, status, statusClass);
+            httpTbody.appendChild(tr);
+        });
     }
 
     // -------------------------------------------------------------
@@ -1222,10 +1248,10 @@
         state.printLogs = data.content;
 
         const tbody = document.getElementById('logs-tbody');
-        tbody.innerHTML = '';
+        clearElement(tbody);
 
         if (!data.content || !data.content.length) {
-            tbody.innerHTML = `<tr><td colspan="10" class="text-center py-4 text-muted">No audit logs found.</td></tr>`;
+            appendEmptyRow(tbody, 10, 'No audit logs found.');
             return;
         }
 
@@ -1233,7 +1259,7 @@
             const statusClass = log.status === 'SUCCESS' ? 'bg-success-subtle' : (log.status === 'REJECTED_QUOTA' ? 'bg-warning-subtle text-dark' : 'bg-danger-subtle');
             
             // Build dynamic mock IP and Request UUID to fit production table requirements
-            const mockIp = `192.168.12.${20 + (log.user.domainUsername.hashCode() % 80)}`;
+            const mockIp = `192.168.12.${20 + (hashCode(log.user.domainUsername) % 80)}`;
             const mockReqId = log.id.toString().substring(0, 8);
             
             // Derive mock quotas before and after for logging display
@@ -1315,18 +1341,18 @@
     });
 
     // Exports
-    document.getElementById('btn-export-logs-csv').onclick = () => {
+    document.getElementById('btn-export-logs-csv').addEventListener('click', () => {
         window.open('/api/v1/admin/reports/export/logs?format=csv', '_blank');
-    };
-    document.getElementById('btn-export-logs-excel').onclick = () => {
+    });
+    document.getElementById('btn-export-logs-excel').addEventListener('click', () => {
         window.open('/api/v1/admin/reports/export/logs?format=excel', '_blank');
-    };
-    document.getElementById('btn-export-users-csv').onclick = () => {
+    });
+    document.getElementById('btn-export-users-csv').addEventListener('click', () => {
         window.open('/api/v1/admin/reports/export/quotas?format=csv', '_blank');
-    };
-    document.getElementById('btn-export-users-excel').onclick = () => {
+    });
+    document.getElementById('btn-export-users-excel').addEventListener('click', () => {
         window.open('/api/v1/admin/reports/export/quotas?format=excel', '_blank');
-    };
+    });
 
     // -------------------------------------------------------------
     // Settings View
@@ -1371,16 +1397,16 @@
     // -------------------------------------------------------------
     function renderPagination(elId, data, params, callback) {
         const container = document.getElementById(elId);
-        container.innerHTML = '';
+        clearElement(container);
 
         if (data.totalPages <= 1) return;
 
         // Previous
         const prevLi = document.createElement('li');
         prevLi.className = `page-item ${data.first ? 'disabled' : ''}`;
-        prevLi.innerHTML = `<a class="page-link" href="javascript:void(0)" aria-label="Previous">&laquo;</a>`;
+        prevLi.appendChild(createPageLink('Previous', '\u00ab'));
         if (!data.first) {
-            prevLi.onclick = () => { params.page--; callback(); };
+            prevLi.addEventListener('click', () => { params.page--; callback(); });
         }
         container.appendChild(prevLi);
 
@@ -1388,19 +1414,29 @@
         for (let i = 0; i < data.totalPages; i++) {
             const li = document.createElement('li');
             li.className = `page-item ${i === data.number ? 'active' : ''}`;
-            li.innerHTML = `<a class="page-link" href="javascript:void(0)">${i + 1}</a>`;
-            li.onclick = () => { params.page = i; callback(); };
+            li.appendChild(createPageLink(`Page ${i + 1}`, String(i + 1)));
+            li.addEventListener('click', () => { params.page = i; callback(); });
             container.appendChild(li);
         }
 
         // Next
         const nextLi = document.createElement('li');
         nextLi.className = `page-item ${data.last ? 'disabled' : ''}`;
-        nextLi.innerHTML = `<a class="page-link" href="javascript:void(0)" aria-label="Next">&raquo;</a>`;
+        nextLi.appendChild(createPageLink('Next', '\u00bb'));
         if (!data.last) {
-            nextLi.onclick = () => { params.page++; callback(); };
+            nextLi.addEventListener('click', () => { params.page++; callback(); });
         }
         container.appendChild(nextLi);
+    }
+
+    function createPageLink(label, text) {
+        const link = document.createElement('a');
+        link.className = 'page-link';
+        link.href = '#';
+        link.setAttribute('aria-label', label);
+        link.textContent = text;
+        link.addEventListener('click', event => event.preventDefault());
+        return link;
     }
 
     function showToast(title, message, type = 'info') {
@@ -1474,15 +1510,15 @@
         return target;
     }
 
-    // Hashcode extension for simple hashes
-    String.prototype.hashCode = function() {
+    function hashCode(value) {
         let hash = 0;
-        for (let i = 0; i < this.length; i++) {
-            const char = this.charCodeAt(i);
+        const text = value == null ? '' : String(value);
+        for (let i = 0; i < text.length; i++) {
+            const char = text.charCodeAt(i);
             hash = (hash << 5) - hash + char;
             hash |= 0; // Convert to 32bit integer
         }
         return Math.abs(hash);
-    };
+    }
 
 })();

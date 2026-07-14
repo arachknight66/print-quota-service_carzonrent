@@ -201,7 +201,7 @@
                 </nav>
                 
                 <!-- Toast Notification Container -->
-                <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1050;">
+                <div class="toast-container position-fixed bottom-0 end-0 p-3 app-toast-container">
                     <div id="app-toast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
                         <div class="toast-header">
                             <strong class="me-auto" id="toast-title">System Alert</strong>
@@ -649,8 +649,8 @@
                                         <span>Heap Allocation Usage</span>
                                         <span id="metrics-jvm-mem-text">0 MB / 0 MB (0%)</span>
                                     </div>
-                                    <div class="progress mb-3" style="height: 12px;">
-                                        <div class="progress-bar" role="progressbar" style="width: 0%;" id="metrics-jvm-mem-progress"></div>
+                                    <div class="progress mb-3 progress-compact">
+                                        <div class="progress-bar progress-empty" role="progressbar" id="metrics-jvm-mem-progress"></div>
                                     </div>
                                     <div class="row text-center mt-3 g-2">
                                         <div class="col-4 border-end">
@@ -678,8 +678,8 @@
                                         <span>System CPU Load</span>
                                         <span id="metrics-cpu-text">0%</span>
                                     </div>
-                                    <div class="progress mb-3" style="height: 12px;">
-                                        <div class="progress-bar bg-success" role="progressbar" style="width: 0%;" id="metrics-cpu-progress"></div>
+                                    <div class="progress mb-3 progress-compact">
+                                        <div class="progress-bar bg-success progress-empty" role="progressbar" id="metrics-cpu-progress"></div>
                                     </div>
                                     <div class="row text-center mt-3 g-2">
                                         <div class="col-6 border-end">
@@ -786,7 +786,7 @@
 
                         <div class="card-body p-0">
                             <div class="table-responsive">
-                                <table class="table table-hover table-striped mb-0 text-nowrap text-secondary" id="logs-table" style="font-size: 0.85rem;">
+                                <table class="table table-hover table-striped mb-0 text-nowrap text-secondary table-compact" id="logs-table">
                                     <thead>
                                         <tr>
                                             <th class="sortable text-dark" data-col="timestamp">Timestamp <i class="fa-solid fa-sort"></i></th>
@@ -824,7 +824,7 @@
                         <div class="card-header bg-white py-2 fw-semibold">Infrastructure Integration Parameters</div>
                         <div class="card-body">
                             <form id="settings-form">
-                                <h5 class="border-bottom pb-2 mb-3 text-secondary" style="font-size: 1rem;"><i class="fa-solid fa-network-wired me-2"></i>Active Directory / LDAP Security Integration</h5>
+                                <h5 class="border-bottom pb-2 mb-3 text-secondary settings-section-title"><i class="fa-solid fa-network-wired me-2"></i>Active Directory / LDAP Security Integration</h5>
                                 <div class="row g-3 mb-4">
                                     <div class="col-12 col-md-6">
                                         <label for="settings-ldap-url" class="form-label small text-muted">Primary Active Directory Server URL</label>
@@ -844,7 +844,7 @@
                                     </div>
                                 </div>
 
-                                <h5 class="border-bottom pb-2 mb-3 text-secondary" style="font-size: 1rem;"><i class="fa-solid fa-server me-2"></i>Spool Spooler & Database Configuration</h5>
+                                <h5 class="border-bottom pb-2 mb-3 text-secondary settings-section-title"><i class="fa-solid fa-server me-2"></i>Spool Spooler & Database Configuration</h5>
                                 <div class="row g-3 mb-4">
                                     <div class="col-12 col-md-6">
                                         <label for="settings-spool-dir" class="form-label small text-muted">Physical System Spool Directory</label>
@@ -856,7 +856,7 @@
                                     </div>
                                 </div>
 
-                                <h5 class="border-bottom pb-2 mb-3 text-secondary" style="font-size: 1rem;"><i class="fa-solid fa-envelope-open me-2"></i>SMTP Reporting Server Configuration</h5>
+                                <h5 class="border-bottom pb-2 mb-3 text-secondary settings-section-title"><i class="fa-solid fa-envelope-open me-2"></i>SMTP Reporting Server Configuration</h5>
                                 <div class="row g-3 mb-4">
                                     <div class="col-12 col-md-6">
                                         <label for="settings-smtp-host" class="form-label small text-muted">Outgoing SMTP Server Hostname</label>
@@ -1007,7 +1007,7 @@
         <footer class="app-footer">
             <div class="container-fluid px-3 d-flex justify-content-between align-items-center">
                 <span>&copy; 2026 Carzonrent India Private Limited. All rights reserved. Authorized IT Access Only.</span>
-                <span class="font-monospace text-muted small" style="font-size: 0.75rem;">Build v1.0.0 (SHA-984A2)</span>
+                <span class="font-monospace text-muted small build-stamp">Build v1.0.0 (SHA-984A2)</span>
             </div>
         </footer>
     </div>

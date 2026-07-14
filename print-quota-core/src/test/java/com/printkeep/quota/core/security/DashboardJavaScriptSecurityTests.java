@@ -40,4 +40,17 @@ class DashboardJavaScriptSecurityTests {
         assertThat(script).doesNotContain("username=${state.usersParams.search}");
         assertThat(script).doesNotContain("correlationId=${state.logsParams.correlationId}");
     }
+
+    @Test
+    void testDashboardAvoidsUnsafeDomInjectionPatterns() throws IOException {
+        final String script = Files.readString(DASHBOARD_SCRIPT);
+
+        assertThat(script).doesNotContain("innerHTML");
+        assertThat(script).doesNotContain(".onclick");
+        assertThat(script).doesNotContain("javascript:void");
+        assertThat(script).doesNotContain("String.prototype");
+        assertThat(script).contains("createElement");
+        assertThat(script).contains("textContent");
+        assertThat(script).contains("replaceChildren");
+    }
 }

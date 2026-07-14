@@ -1,0 +1,115 @@
+body {
+    align-items: center;
+    background-color: #F8FAFC;
+    color: #0F172A;
+    display: flex;
+    font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    height: 100vh;
+    justify-content: center;
+}
+
+.error-card {
+    background-color: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 6px;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    max-width: 600px;
+    padding: 2.5rem;
+    width: 100%;
+}
+
+.brand-header {
+    align-items: center;
+    border-bottom: 2px solid #E2E8F0;
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+}
+
+.brand-logo {
+    align-items: center;
+    background-color: #2563EB;
+    border-radius: 4px;
+    color: #FFFFFF;
+    display: flex;
+    font-size: 1.25rem;
+    font-weight: 700;
+    height: 2.5rem;
+    justify-content: center;
+    width: 2.5rem;
+}
+
+.brand-title {
+    color: #0F172A;
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.brand-subtitle {
+    color: #64748B;
+    font-size: 0.85rem;
+    margin: 0;
+}
+
+.error-code {
+    color: #DC2626;
+    font-size: 3rem;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 1rem;
+}
+
+.error-code-warning {
+    color: #F59E0B;
+}
+
+.error-title {
+    color: #1E293B;
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.meta-table {
+    background-color: #F1F5F9;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 0.85rem;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+}
+
+.meta-row {
+    border-bottom: 1px solid #E2E8F0;
+    display: flex;
+    justify-content: space-between;
+    padding: 0.25rem 0;
+}
+
+.meta-row:last-child {
+    border-bottom: none;
+}
+
+.meta-label {
+    color: #64748B;
+}
+
+.meta-value {
+    color: #334155;
+    font-weight: 600;
+}
+
+.btn-primary {
+    background-color: #2563EB;
+    border-color: #2563EB;
+    border-radius: 4px;
+    font-weight: 500;
+    padding: 0.5rem 1.25rem;
+}
+
+.btn-primary:hover {
+    background-color: #1D4ED8;
+    border-color: #1D4ED8;
+}
