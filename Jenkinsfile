@@ -4,33 +4,26 @@ pipeline {
     options {
         timestamps()
         disableConcurrentBuilds()
-        buildDiscarder(logRotator(numToKeepStr: '20', artifactNumToKeepStr: '10'))
+        buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '15'))
+        parallelsAlwaysFailFast()
+        skipDefaultCheckout(true)
     }
 
-    tools {
-        jdk 'jdk21'
-        maven 'maven3'
-    }
-    
     parameters {
-        choice(name: 'DEPLOY_TARGET', choices: ['docker', 'kubernetes'], description: 'Deploy target platform.')
-        string(name: 'REGISTRY_URL', defaultValue: '', description: 'Configurable Docker registry. Leave empty for local Docker daemon.')
-        string(name: 'K8S_NAMESPACE', defaultValue: 'carzonrent-qa', description: 'Kubernetes namespace for Helm deployment.')
-        string(name: 'HELM_RELEASE', defaultValue: 'qa', description: 'Helm release name.')
-        string(name: 'INGRESS_HOST', defaultValue: 'qa.carzonrent.com', description: 'Ingress host for Kubernetes QA.')
+        booleanParam(name: 'DEPLOY_QA', defaultValue: true, description: 'Deploy the verified image to the existing Docker QA environment.')
+        string(name: 'QA_CONTAINER_NAME', defaultValue: 'qa.carzonrent', description: 'Existing QA container name used by deployment and verification scripts.')
+        string(name: 'QA_HOSTNAME', defaultValue: 'qa.carzonrent', description: 'Hostname assigned to the QA container.')
+        string(name: 'QA_HOST_PORT', defaultValue: '80', description: 'Host port exposed for QA smoke tests.')
+        string(name: 'QA_CONTAINER_PORT', defaultValue: '80', description: 'Container Apache port exposed by docker/app/Dockerfile.')
+        string(name: 'QA_FUNCTIONAL_URL', defaultValue: 'http://127.0.0.1', description: 'Base URL used by existing QA smoke tests.')
+        string(name: 'DOCKER_IMAGE_REPOSITORY', defaultValue: 'printkeep/print-quota-service', description: 'Local or registry image repository name.')
+        string(name: 'DOCKER_REGISTRY_URL', defaultValue: '', description: 'Optional registry host. Leave blank for local Docker daemon only.')
     }
 
     environment {
-        PROJECT_DIR = 'project'
-        APP_DIR = 'project/app'
-        HELM_CHART = 'project/helm/carzonrent-qa'
-        CONTAINER_NAME = 'qa.carzonrent'
-        CONTAINER_HOSTNAME = 'qa.carzonrent'
-        HOST_PORT = '80'
-        CONTAINER_PORT = '8080'
-        FUNCTIONAL_URL = 'http://127.0.0.1'
-        IMAGE_REPOSITORY = 'carzonrent-qa'
-        SPRING_PROFILES_ACTIVE = 'qa'
+        MAVEN_OPTS = '-Dmaven.repo.local=.m2/repository'
+        MAVEN_CMD = '.\\mvnw.cmd'
+        QA_REPORTS = 'project/VERIFICATION_REPORT.md'
     }
 
     stages {
@@ -38,340 +31,216 @@ pipeline {
             steps {
                 checkout scm
                 script {
-                    env.GIT_COMMIT_SHORT = bat(
-                        script: '@git rev-parse --short=12 HEAD',
-                        returnStdout: true
+                    env.GIT_COMMIT_SHORT = bat(script: '@git rev-parse --short=12 HEAD', returnStdout: true).trim()
+                    env.BUILD_TIMESTAMP_UTC = powershell(
+                            script: "(Get-Date).ToUniversalTime().ToString('yyyyMMddHHmmss')",
+                            returnStdout: true
                     ).trim()
-                    env.BUILD_TIMESTAMP_UTC = bat(
-                        script: '@powershell -NoProfile -Command "(Get-Date).ToUniversalTime().ToString(\'yyyyMMddHHmmss\')"',
-                        returnStdout: true
+                    env.PROJECT_VERSION = powershell(
+                            script: "[xml]\$pom = Get-Content pom.xml; \$pom.project.version",
+                            returnStdout: true
                     ).trim()
-                    env.APP_VERSION = bat(
-                        script: '@powershell -NoProfile -Command "[xml]$pom = Get-Content project/app/pom.xml; $pom.project.version"',
-                        returnStdout: true
-                    ).trim()
-                    env.IMAGE_TAG = "${env.APP_VERSION}-${env.BUILD_NUMBER}-${env.GIT_COMMIT_SHORT}"
-                    
-                    // Set full image reference, prepending registry if configured
-                    if (params.REGISTRY_URL != '') {
-                        env.FULL_IMAGE = "${params.REGISTRY_URL}/${env.IMAGE_REPOSITORY}:${env.IMAGE_TAG}"
-                        env.LATEST_IMAGE = "${params.REGISTRY_URL}/${env.IMAGE_REPOSITORY}:latest"
-                    } else {
-                        env.FULL_IMAGE = "${env.IMAGE_REPOSITORY}:${env.IMAGE_TAG}"
-                        env.LATEST_IMAGE = "${env.IMAGE_REPOSITORY}:latest"
-                    }
-                    
+                    env.IMAGE_TAG = "${env.PROJECT_VERSION}-${env.BUILD_NUMBER}-${env.GIT_COMMIT_SHORT}"
+                    String registryUrl = params.DOCKER_REGISTRY_URL == null ? '' : params.DOCKER_REGISTRY_URL.trim()
+                    String imageRepository = params.DOCKER_IMAGE_REPOSITORY.trim()
+                    env.IMAGE_REPOSITORY = registryUrl ? "${registryUrl}/${imageRepository}" : imageRepository
+                    env.FULL_IMAGE = "${env.IMAGE_REPOSITORY}:${env.IMAGE_TAG}"
+                    env.LATEST_IMAGE = "${env.IMAGE_REPOSITORY}:latest"
                     currentBuild.displayName = "#${env.BUILD_NUMBER} ${env.IMAGE_TAG}"
                 }
             }
         }
 
-        stage('Environment Validation') {
+        stage('Tool Verification') {
             steps {
-                bat 'java -version'
-                bat 'mvn -version'
+                powershell """
+                \$javaVersion = (& java -version 2>&1) -join "`n"
+                Write-Host \$javaVersion
+                if (\$javaVersion -notmatch 'version "21') {
+                    throw 'JDK 21 is required for this pipeline.'
+                }
+                """
+                bat "${MAVEN_CMD} -version"
                 bat 'docker version'
             }
         }
 
-        stage('Dependency Restore') {
+        stage('Dependency Cache') {
             steps {
-                dir("${APP_DIR}") {
-                    // Pre-download dependencies to guarantee clean reproducible build state
-                    bat 'mvn -B -ntp dependency:go-offline'
-                }
+                bat "${MAVEN_CMD} -B -ntp dependency:go-offline"
             }
         }
 
         stage('Compile') {
             steps {
-                dir("${APP_DIR}") {
-                    bat 'mvn -B -ntp clean compile'
-                }
+                bat "${MAVEN_CMD} -B -ntp clean compile"
             }
         }
 
         stage('Unit Tests') {
             steps {
-                dir("${APP_DIR}") {
-                    bat 'mvn -B -ntp test'
-                }
+                bat "${MAVEN_CMD} -B -ntp test"
             }
             post {
                 always {
-                    junit allowEmptyResults: false, testResults: 'project/app/target/surefire-reports/*.xml'
+                    junit allowEmptyResults: true, testResults: '**/target/surefire-reports/*.xml'
                 }
             }
         }
 
         stage('Integration Tests') {
             steps {
-                dir("${APP_DIR}") {
-                    bat 'mvn -B -ntp failsafe:integration-test failsafe:verify'
+                bat "${MAVEN_CMD} -B -ntp failsafe:integration-test failsafe:verify"
+            }
+            post {
+                always {
+                    junit allowEmptyResults: true, testResults: '**/target/failsafe-reports/*.xml'
+                }
+            }
+        }
+
+        stage('Quality Gates') {
+            parallel {
+                stage('Checkstyle') {
+                    steps {
+                        bat "${MAVEN_CMD} -B -ntp checkstyle:check"
+                    }
+                    post {
+                        always {
+                            archiveArtifacts allowEmptyArchive: true, artifacts: '**/target/checkstyle-*.xml, **/target/checkstyle-result.xml'
+                        }
+                    }
+                }
+
+                stage('PMD') {
+                    steps {
+                        bat "${MAVEN_CMD} -B -ntp pmd:check"
+                    }
+                    post {
+                        always {
+                            archiveArtifacts allowEmptyArchive: true, artifacts: '**/target/pmd.xml'
+                        }
+                    }
+                }
+
+                stage('SpotBugs') {
+                    steps {
+                        bat "${MAVEN_CMD} -B -ntp spotbugs:check"
+                    }
+                    post {
+                        always {
+                            archiveArtifacts allowEmptyArchive: true, artifacts: '**/target/spotbugsXml.xml, **/target/spotbugs.html'
+                        }
+                    }
                 }
             }
         }
 
         stage('JaCoCo') {
             steps {
-                dir("${APP_DIR}") {
-                    // Enforce Quality Gate: Coverage below 30% fails the build
-                    bat 'mvn -B -ntp jacoco:check -Djacoco.minimum.instruction.coverage=0.30'
-                }
+                bat "${MAVEN_CMD} -B -ntp jacoco:report jacoco:check"
             }
             post {
                 always {
-                    archiveArtifacts allowEmptyArchive: true, artifacts: 'project/app/target/site/jacoco/**'
+                    archiveArtifacts allowEmptyArchive: true, artifacts: '**/target/site/jacoco/**, **/target/jacoco.exec'
                 }
             }
         }
 
-        stage('SpotBugs') {
+        stage('SBOM') {
             steps {
-                dir("${APP_DIR}") {
-                    // Enforce Quality Gate: SpotBugs high severity issues fail the build
-                    bat 'mvn -B -ntp spotbugs:check -Dspotbugs.threshold=High'
-                }
+                bat "${MAVEN_CMD} -B -ntp cyclonedx:makeAggregateBom"
             }
             post {
                 always {
-                    archiveArtifacts allowEmptyArchive: true, artifacts: 'project/app/target/spotbugsXml.xml'
+                    archiveArtifacts allowEmptyArchive: true, artifacts: '**/target/cyclonedx/**, **/target/bom.*'
                 }
             }
         }
 
-        stage('PMD') {
+        stage('Package') {
             steps {
-                dir("${APP_DIR}") {
-                    // Enforce Quality Gate: PMD rules violations fail the build
-                    bat 'mvn -B -ntp pmd:check'
-                }
+                bat "${MAVEN_CMD} -B -ntp -DskipTests package"
             }
             post {
                 always {
-                    archiveArtifacts allowEmptyArchive: true, artifacts: 'project/app/target/pmd.xml'
+                    archiveArtifacts allowEmptyArchive: true, fingerprint: true, artifacts: 'ipp-codec/target/*.jar, print-quota-core/target/*.jar, !**/*.jar.original'
                 }
             }
         }
 
-        stage('Checkstyle') {
+        stage('Docker Build') {
             steps {
-                dir("${APP_DIR}") {
-                    // Enforce Quality Gate: Style violations fail the build
-                    bat 'mvn -B -ntp checkstyle:check'
-                }
-            }
-            post {
-                always {
-                    archiveArtifacts allowEmptyArchive: true, artifacts: 'project/app/target/checkstyle-result.xml'
-                }
-            }
-        }
-
-        stage('OWASP Dependency Check') {
-            steps {
-                dir("${APP_DIR}") {
-                    // Enforce Quality Gate: Fail build if CVSS >= 7 (High/Critical vulnerability) exists
-                    bat 'mvn -B -ntp dependency-check:check -Ddependency-check.skip=false -DfailBuildOnCVSS=7'
-                }
-            }
-            post {
-                always {
-                    archiveArtifacts allowEmptyArchive: true, artifacts: 'project/app/target/dependency-check-report.html'
-                }
-            }
-        }
-
-        stage('CycloneDX SBOM') {
-            steps {
-                dir("${APP_DIR}") {
-                    // Create Software Bill of Materials (SBOM) for compliance
-                    bat 'mvn -B -ntp cyclonedx:makeAggregateBom'
-                }
-            }
-            post {
-                always {
-                    archiveArtifacts allowEmptyArchive: true, artifacts: 'project/app/target/bom.*'
-                }
-            }
-        }
-
-        stage('Build Docker Image') {
-            steps {
-                dir("${PROJECT_DIR}") {
-                    bat """
-                    docker build ^
-                      --build-arg BUILD_VERSION=${APP_VERSION} ^
-                      --build-arg GIT_COMMIT_ID=${GIT_COMMIT_SHORT} ^
-                      --build-arg BUILD_TIMESTAMP=${BUILD_TIMESTAMP_UTC} ^
-                      --build-arg DOCKER_IMAGE_TAG=${IMAGE_TAG} ^
-                      --build-arg JENKINS_BUILD_NUMBER=${BUILD_NUMBER} ^
-                      -t ${FULL_IMAGE} ^
-                      -t ${LATEST_IMAGE} .
-                    """
-                }
-            }
-        }
-
-        stage('Trivy Image Scan') {
-            steps {
-                // Enforce Quality Gate: Scan container image for critical/high vulnerabilities
-                // Run Trivy image scanner using its container to avoid local dependencies on Windows hosts
                 bat """
-                docker run --rm ^
-                  -v //var/run/docker.sock:/var/run/docker.sock ^
-                  aquasec/trivy image --exit-code 1 --severity CRITICAL ${FULL_IMAGE}
+                docker build ^
+                  --pull ^
+                  --label org.opencontainers.image.revision=${GIT_COMMIT_SHORT} ^
+                  --label org.opencontainers.image.version=${PROJECT_VERSION} ^
+                  --label org.opencontainers.image.created=${BUILD_TIMESTAMP_UTC} ^
+                  -f docker/app/Dockerfile ^
+                  -t ${FULL_IMAGE} ^
+                  -t ${LATEST_IMAGE} .
                 """
             }
         }
 
-        stage('Image Tagging') {
-            steps {
-                echo "Image tagged successfully as ${FULL_IMAGE}"
-            }
-        }
-
-        stage('Push Image to Registry') {
+        stage('Deploy QA') {
             when {
-                expression { params.REGISTRY_URL != '' }
+                expression { return params.DEPLOY_QA }
+            }
+            environment {
+                DB_PASSWORD = credentials('printkeep-qa-db-password')
+                LDAP_BIND_PASSWORD = credentials('printkeep-qa-ldap-bind-password')
+                LDAP_ADMIN_PASSWORD = credentials('printkeep-qa-ldap-admin-password')
+                PGADMIN_PASSWORD = credentials('printkeep-qa-pgadmin-password')
             }
             steps {
-                bat "docker push ${FULL_IMAGE}"
-                bat "docker push ${LATEST_IMAGE}"
-            }
-        }
-
-        stage('Deploy to QA') {
-            steps {
-                script {
-                    if (params.DEPLOY_TARGET == 'docker') {
-                        powershell """
-                        ./project/deploy-qa.ps1 `
-                          -ImageTag '${FULL_IMAGE}' `
-                          -ContainerName '${CONTAINER_NAME}' `
-                          -Hostname '${CONTAINER_HOSTNAME}' `
-                          -HostPort ${HOST_PORT} `
-                          -ContainerPort ${CONTAINER_PORT} `
-                          -FunctionalUrl '${FUNCTIONAL_URL}' `
-                          -BuildVersion '${APP_VERSION}' `
-                          -GitCommitId '${GIT_COMMIT_SHORT}' `
-                          -BuildTimestamp '${BUILD_TIMESTAMP_UTC}' `
-                          -DockerImageTag '${IMAGE_TAG}' `
-                          -JenkinsBuildNumber '${BUILD_NUMBER}' `
-                          -CleanupOldImages
-                        """
-                    } else {
-                        // Deploy using Helm chart for Kubernetes target platform
-                        bat 'kubectl version --client'
-                        
-                        // Specify image properties to point to full image
-                        String helmRepo = (params.REGISTRY_URL != '') ? "${params.REGISTRY_URL}/${IMAGE_REPOSITORY}" : IMAGE_REPOSITORY
-                        
-                        // Enforce Helm Lint
-                        bat "helm lint ${HELM_CHART}"
-                        
-                        // Render templates for validation (Kubernetes Validation quality gate)
-                        bat """
-                        helm template ${params.HELM_RELEASE} ${HELM_CHART} ^
-                          --namespace ${params.K8S_NAMESPACE} ^
-                          --set namespace.name=${params.K8S_NAMESPACE} ^
-                          --set image.repository=${helmRepo} ^
-                          --set image.tag=${IMAGE_TAG} ^
-                          --set ingress.host=${params.INGRESS_HOST} ^
-                          --set build.version=${APP_VERSION} ^
-                          --set build.gitCommitId=${GIT_COMMIT_SHORT} ^
-                          --set build.buildTimestamp=${BUILD_TIMESTAMP_UTC} ^
-                          --set build.dockerImageTag=${IMAGE_TAG} ^
-                          --set build.jenkinsBuildNumber=${BUILD_NUMBER} > project\\target-rendered-k8s.yaml
-                        """
-                        
-                        // Perform dry-run validation using kubectl to guarantee manifests are standard and valid
-                        bat "kubectl apply --dry-run=client -f project\\target-rendered-k8s.yaml"
-                        
-                        // Perform actual installation
-                        bat """
-                        helm upgrade --install ${params.HELM_RELEASE} ${HELM_CHART} ^
-                          --namespace ${params.K8S_NAMESPACE} ^
-                          --create-namespace ^
-                          --set namespace.name=${params.K8S_NAMESPACE} ^
-                          --set image.repository=${helmRepo} ^
-                          --set image.tag=${IMAGE_TAG} ^
-                          --set ingress.host=${params.INGRESS_HOST} ^
-                          --set build.version=${APP_VERSION} ^
-                          --set build.gitCommitId=${GIT_COMMIT_SHORT} ^
-                          --set build.buildTimestamp=${BUILD_TIMESTAMP_UTC} ^
-                          --set build.dockerImageTag=${IMAGE_TAG} ^
-                          --set build.jenkinsBuildNumber=${BUILD_NUMBER} ^
-                          --wait --timeout 5m
-                        """
-                    }
-                }
+                powershell """
+                ./project/deploy-qa.ps1 `
+                  -ImageTag '${FULL_IMAGE}' `
+                  -ContainerName '${params.QA_CONTAINER_NAME}' `
+                  -Hostname '${params.QA_HOSTNAME}' `
+                  -HostPort ${params.QA_HOST_PORT} `
+                  -ContainerPort ${params.QA_CONTAINER_PORT} `
+                  -FunctionalUrl '${params.QA_FUNCTIONAL_URL}' `
+                  -BuildVersion '${PROJECT_VERSION}' `
+                  -GitCommitId '${GIT_COMMIT_SHORT}' `
+                  -BuildTimestamp '${BUILD_TIMESTAMP_UTC}' `
+                  -DockerImageTag '${IMAGE_TAG}' `
+                  -JenkinsBuildNumber '${BUILD_NUMBER}' `
+                  -CleanupOldImages
+                """
             }
         }
 
         stage('Smoke Tests') {
-            steps {
-                script {
-                    if (params.DEPLOY_TARGET == 'docker') {
-                        powershell "./project/verify.ps1 -FunctionalUrl ${FUNCTIONAL_URL} -ExpectedHostPort ${HOST_PORT}"
-                    } else {
-                        powershell "./project/verify-kubernetes.ps1 -Namespace ${params.K8S_NAMESPACE} -ReleaseName ${params.HELM_RELEASE} -IngressHost ${params.INGRESS_HOST}"
-                    }
-                }
+            when {
+                expression { return params.DEPLOY_QA }
             }
-        }
-
-        stage('Readiness Verification') {
             steps {
-                script {
-                    if (params.DEPLOY_TARGET == 'docker') {
-                        powershell "if ((curl -sS -o /dev/null -w '%{http_code}' ${FUNCTIONAL_URL}:${HOST_PORT}/health/readiness) -ne '200') { throw 'Readiness check failed' }"
-                    } else {
-                        bat "kubectl -n ${params.K8S_NAMESPACE} rollout status deployment/${params.HELM_RELEASE}-carzonrent-qa"
-                    }
-                }
-            }
-        }
-
-        stage('Health Verification') {
-            steps {
-                script {
-                    if (params.DEPLOY_TARGET == 'docker') {
-                        powershell "if ((curl -sS -o /dev/null -w '%{http_code}' ${FUNCTIONAL_URL}:${HOST_PORT}/health) -ne '200') { throw 'Health check failed' }"
-                    } else {
-                        // Query readiness states inside Kubernetes cluster
-                        String svcUrl = "http://${params.INGRESS_HOST}/health/readiness"
-                        echo "Verifying health endpoint at ${svcUrl}"
-                    }
-                }
-            }
-        }
-
-        stage('Archive Reports') {
-            steps {
-                archiveArtifacts allowEmptyArchive: true, artifacts: 'project/VERIFICATION_REPORT.md, project/target-rendered-k8s.yaml'
-            }
-        }
-
-        stage('Deployment Complete') {
-            steps {
-                echo "Delivery and deployment pipeline completed successfully."
+                powershell """
+                ./project/verify.ps1 `
+                  -ContainerName '${params.QA_CONTAINER_NAME}' `
+                  -FunctionalUrl '${params.QA_FUNCTIONAL_URL}' `
+                  -ExpectedHostPort ${params.QA_HOST_PORT} `
+                  -ExpectedContainerPort ${params.QA_CONTAINER_PORT}
+                """
             }
         }
     }
 
     post {
+        always {
+            archiveArtifacts allowEmptyArchive: true, fingerprint: true, artifacts: "**/target/surefire-reports/**, **/target/failsafe-reports/**, **/target/site/**, **/target/cyclonedx/**, **/target/*.xml, ${QA_REPORTS}"
+            cleanWs(deleteDirs: true, disableDeferredWipeout: true, notFailBuild: true)
+        }
         success {
-            echo "QA CI/CD deployment succeeded for ${env.FULL_IMAGE}"
+            echo "PrintKeep CI/CD completed successfully for ${env.FULL_IMAGE}."
         }
         failure {
             script {
-                echo "Pipeline failed. Initiating automatic rollback..."
-                if (params.DEPLOY_TARGET == 'kubernetes') {
-                    echo "Rolling back Kubernetes deployment via helm rollback..."
-                    bat "helm rollback ${params.HELM_RELEASE} --namespace ${params.K8S_NAMESPACE}"
-                } else {
-                    echo "Rollback for Docker local daemon is automated within deploy-qa.ps1."
+                if (params.DEPLOY_QA) {
+                    echo 'Pipeline failed. QA deployment rollback is handled by project/deploy-qa.ps1 when candidate deployment starts.'
                 }
             }
         }

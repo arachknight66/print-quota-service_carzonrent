@@ -15,7 +15,10 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/admin/telemetry")
@@ -129,13 +132,15 @@ public class AdminTelemetryController {
         double systemLoad = 0.15; // default fallback
         try {
             final java.lang.management.OperatingSystemMXBean osBean = java.lang.management.ManagementFactory.getOperatingSystemMXBean();
-            if (osBean instanceof com.sun.management.OperatingSystemMXBean) {
-                final double load = ((com.sun.management.OperatingSystemMXBean) osBean).getCpuLoad();
+            if (osBean instanceof com.sun.management.OperatingSystemMXBean operatingSystemMXBean) {
+                final double load = operatingSystemMXBean.getCpuLoad();
                 if (load >= 0) {
                     systemLoad = load;
                 }
             }
-        } catch (Throwable ignored) {}
+        } catch (final RuntimeException ignored) {
+            // Keep the fallback load value if JVM telemetry is unavailable.
+        }
         cpuMap.put("usagePercentage", systemLoad * 100.0);
         stats.put("cpu", cpuMap);
 
@@ -147,15 +152,15 @@ public class AdminTelemetryController {
         int maxConn = 10;
         if (dataSource != null) {
             try {
-                if (dataSource.getClass().getName().contains("HikariDataSource")) {
-                    final com.zaxxer.hikari.HikariDataSource hikariDS = (com.zaxxer.hikari.HikariDataSource) dataSource;
-                    if (hikariDS.getHikariPoolMXBean() != null) {
-                        activeConn = hikariDS.getHikariPoolMXBean().getActiveConnections();
-                        idleConn = hikariDS.getHikariPoolMXBean().getIdleConnections();
-                        maxConn = hikariDS.getMaximumPoolSize();
-                    }
+                if (dataSource instanceof com.zaxxer.hikari.HikariDataSource hikariDS
+                        && hikariDS.getHikariPoolMXBean() != null) {
+                    activeConn = hikariDS.getHikariPoolMXBean().getActiveConnections();
+                    idleConn = hikariDS.getHikariPoolMXBean().getIdleConnections();
+                    maxConn = hikariDS.getMaximumPoolSize();
                 }
-            } catch (Throwable ignored) {}
+            } catch (final RuntimeException ignored) {
+                // Keep fallback connection counts if pool telemetry is unavailable.
+            }
         }
         dbMap.put("activeConnections", activeConn);
         dbMap.put("idleConnections", idleConn);
@@ -194,7 +199,7 @@ public class AdminTelemetryController {
 
         String nextExecutionStr = "N/A";
         try {
-            if (cron != null && !cron.trim().equals("-")) {
+            if (cron != null && !"-".equals(cron.trim())) {
                 final CronExpression expr = CronExpression.parse(cron);
                 final ZonedDateTime nextRun = expr.next(ZonedDateTime.ofInstant(now, utcZone));
                 if (nextRun != null) {

@@ -528,8 +528,43 @@
     // -------------------------------------------------------------
     // Users View
     // -------------------------------------------------------------
+    function appendTextCell(row, text, className = '') {
+        const cell = document.createElement('td');
+        if (className) cell.className = className;
+        cell.textContent = text == null ? '' : String(text);
+        row.appendChild(cell);
+        return cell;
+    }
+
+    function appendBadgeCell(row, text, badgeClass = 'bg-secondary-subtle') {
+        const cell = document.createElement('td');
+        const badge = document.createElement('span');
+        badge.className = `badge ${badgeClass}`;
+        badge.textContent = text == null ? '' : String(text);
+        cell.appendChild(badge);
+        row.appendChild(cell);
+        return cell;
+    }
+
+    function appendActionButton(cell, className, text, dataAttributes = {}) {
+        const button = document.createElement('button');
+        button.className = className;
+        Object.entries(dataAttributes).forEach(([key, value]) => {
+            button.setAttribute(`data-${key}`, value == null ? '' : String(value));
+        });
+        button.textContent = text;
+        cell.appendChild(button);
+        return button;
+    }
+
     async function loadUsersView() {
-        const url = `/api/v1/admin/users?page=${state.usersParams.page}&size=${state.usersParams.size}&username=${state.usersParams.search}&department=${state.usersParams.department}`;
+        const params = new URLSearchParams({
+            page: state.usersParams.page,
+            size: state.usersParams.size,
+            username: state.usersParams.search,
+            department: state.usersParams.department
+        });
+        const url = `/api/v1/admin/users?${params.toString()}`;
         const data = await apiRequest(url);
         state.users = data.content;
 
@@ -563,22 +598,21 @@
             const cleanEmpId = `CZI-${100000 + index + state.usersParams.page * state.usersParams.size}`;
 
             const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td class="font-monospace text-muted">${cleanEmpId}</td>
-                <td class="fw-semibold">${user.domainUsername}</td>
-                <td>${user.department}</td>
-                <td class="text-end">${quota.allocatedPages}</td>
-                <td class="text-end">${quota.usedPages}</td>
-                <td class="text-end ${remainingClass}">${remaining}</td>
-                <td><span class="badge ${user.active ? 'bg-success-subtle' : 'bg-danger-subtle'}">${user.active ? 'ACTIVE' : 'DISABLED'}</span></td>
-                <td>${mockLogins[index % mockLogins.length]}</td>
-                <td><span class="badge bg-secondary-subtle">SYNCED</span></td>
-                <td>
-                    <button class="btn btn-xs btn-outline-secondary py-0 px-2 btn-user-adjust" data-id="${user.id}" data-username="${user.domainUsername}">
-                        <i class="fa-solid fa-edit"></i> Edit Quota
-                    </button>
-                </td>
-            `;
+            appendTextCell(tr, cleanEmpId, 'font-monospace text-muted');
+            appendTextCell(tr, user.domainUsername, 'fw-semibold');
+            appendTextCell(tr, user.department);
+            appendTextCell(tr, quota.allocatedPages, 'text-end');
+            appendTextCell(tr, quota.usedPages, 'text-end');
+            appendTextCell(tr, remaining, `text-end ${remainingClass}`);
+            appendBadgeCell(tr, user.active ? 'ACTIVE' : 'DISABLED', user.active ? 'bg-success-subtle' : 'bg-danger-subtle');
+            appendTextCell(tr, mockLogins[index % mockLogins.length]);
+            appendBadgeCell(tr, 'SYNCED', 'bg-secondary-subtle');
+            const actionCell = document.createElement('td');
+            appendActionButton(actionCell, 'btn btn-xs btn-outline-secondary py-0 px-2 btn-user-adjust', 'Edit Quota', {
+                id: user.id,
+                username: user.domainUsername
+            });
+            tr.appendChild(actionCell);
             tbody.appendChild(tr);
         });
 
@@ -674,7 +708,12 @@
     // Quota Management View
     // -------------------------------------------------------------
     async function loadQuotaManagementView() {
-        const url = `/api/v1/admin/quotas?page=${state.quotaParams.page}&size=${state.quotaParams.size}&username=${state.quotaParams.search}`;
+        const params = new URLSearchParams({
+            page: state.quotaParams.page,
+            size: state.quotaParams.size,
+            username: state.quotaParams.search
+        });
+        const url = `/api/v1/admin/quotas?${params.toString()}`;
         const data = await apiRequest(url);
         
         const tbody = document.getElementById('quota-tbody');
@@ -690,20 +729,28 @@
             const remainingClass = remaining <= 10 ? 'text-danger fw-bold' : '';
 
             const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td class="fw-semibold">${quota.user.domainUsername}</td>
-                <td><span class="badge bg-secondary-subtle">${quota.user.department}</span></td>
-                <td class="fw-semibold">${quota.allocatedPages}</td>
-                <td>${quota.usedPages}</td>
-                <td class="${remainingClass}">${remaining}</td>
-                <td>
-                    <div class="btn-group btn-group-xs">
-                        <button class="btn btn-xs btn-outline-primary px-2 btn-quota-add50" data-id="${quota.user.id}" data-username="${quota.user.domainUsername}">+50 Pages</button>
-                        <button class="btn btn-xs btn-outline-danger px-2 btn-quota-sub50" data-id="${quota.user.id}" data-username="${quota.user.domainUsername}">-50 Pages</button>
-                        <button class="btn btn-xs btn-outline-secondary px-2 btn-quota-custom" data-id="${quota.user.id}" data-username="${quota.user.domainUsername}">Custom</button>
-                    </div>
-                </td>
-            `;
+            appendTextCell(tr, quota.user.domainUsername, 'fw-semibold');
+            appendBadgeCell(tr, quota.user.department, 'bg-secondary-subtle');
+            appendTextCell(tr, quota.allocatedPages, 'fw-semibold');
+            appendTextCell(tr, quota.usedPages);
+            appendTextCell(tr, remaining, remainingClass);
+            const actionCell = document.createElement('td');
+            const group = document.createElement('div');
+            group.className = 'btn-group btn-group-xs';
+            appendActionButton(group, 'btn btn-xs btn-outline-primary px-2 btn-quota-add50', '+50 Pages', {
+                id: quota.user.id,
+                username: quota.user.domainUsername
+            });
+            appendActionButton(group, 'btn btn-xs btn-outline-danger px-2 btn-quota-sub50', '-50 Pages', {
+                id: quota.user.id,
+                username: quota.user.domainUsername
+            });
+            appendActionButton(group, 'btn btn-xs btn-outline-secondary px-2 btn-quota-custom', 'Custom', {
+                id: quota.user.id,
+                username: quota.user.domainUsername
+            });
+            actionCell.appendChild(group);
+            tr.appendChild(actionCell);
             tbody.appendChild(tr);
         });
 
@@ -807,26 +854,35 @@
             const barBg = pct > 80 ? 'bg-danger' : (pct > 50 ? 'bg-warning' : 'bg-success');
 
             const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td class="fw-semibold">${deptName}</td>
-                <td>${d.usersCount}</td>
-                <td class="fw-semibold">${d.allocated}</td>
-                <td>${d.used}</td>
-                <td>${remaining}</td>
-                <td style="width: 200px;">
-                    <div class="d-flex align-items-center gap-2">
-                        <div class="progress flex-grow-1" style="height: 10px;">
-                            <div class="progress-bar ${barBg}" role="progressbar" style="width: ${pct}%;"></div>
-                        </div>
-                        <span class="small font-monospace">${pct}%</span>
-                    </div>
-                </td>
-                <td>
-                    <button class="btn btn-xs btn-outline-secondary py-0 px-2 btn-dept-adjust" data-dept="${deptName}">
-                        <i class="fa-solid fa-sliders"></i> Default Limit
-                    </button>
-                </td>
-            `;
+            appendTextCell(tr, deptName, 'fw-semibold');
+            appendTextCell(tr, d.usersCount);
+            appendTextCell(tr, d.allocated, 'fw-semibold');
+            appendTextCell(tr, d.used);
+            appendTextCell(tr, remaining);
+            const progressCell = document.createElement('td');
+            progressCell.style.width = '200px';
+            const wrapper = document.createElement('div');
+            wrapper.className = 'd-flex align-items-center gap-2';
+            const progress = document.createElement('div');
+            progress.className = 'progress flex-grow-1';
+            progress.style.height = '10px';
+            const progressBar = document.createElement('div');
+            progressBar.className = `progress-bar ${barBg}`;
+            progressBar.setAttribute('role', 'progressbar');
+            progressBar.style.width = `${pct}%`;
+            progress.appendChild(progressBar);
+            const pctLabel = document.createElement('span');
+            pctLabel.className = 'small font-monospace';
+            pctLabel.textContent = `${pct}%`;
+            wrapper.appendChild(progress);
+            wrapper.appendChild(pctLabel);
+            progressCell.appendChild(wrapper);
+            tr.appendChild(progressCell);
+            const actionCell = document.createElement('td');
+            appendActionButton(actionCell, 'btn btn-xs btn-outline-secondary py-0 px-2 btn-dept-adjust', 'Default Limit', {
+                dept: deptName
+            });
+            tr.appendChild(actionCell);
             tbody.appendChild(tr);
         });
 
@@ -856,53 +912,88 @@
             const tonerBg = p.tonerLevel < 20 ? 'bg-danger' : (p.tonerLevel < 50 ? 'bg-warning' : 'bg-success');
             const paperBg = p.paperLevel < 20 ? 'bg-danger' : (p.paperLevel < 50 ? 'bg-warning' : 'bg-success');
 
-            col.innerHTML = `
-                <div class="printer-card">
-                    <div class="printer-status-bar ${p.status}"></div>
-                    <div class="p-3">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="fw-bold font-monospace text-primary" style="font-size: 1rem;">${p.name}</span>
-                            <span class="badge ${badgeBg}">${p.status}</span>
-                        </div>
-                        <p class="small text-muted mb-2"><i class="fa-solid fa-map-location-dot me-1"></i> ${p.location}</p>
-                        
-                        <div class="border-top pt-2 mb-3">
-                            <div class="d-flex justify-content-between small text-secondary mb-1">
-                                <span>Toner Level:</span>
-                                <span class="fw-semibold">${p.tonerLevel}%</span>
-                            </div>
-                            <div class="progress mb-2" style="height: 6px;">
-                                <div class="progress-bar ${tonerBg}" role="progressbar" style="width: ${p.tonerLevel}%;"></div>
-                            </div>
-                            
-                            <div class="d-flex justify-content-between small text-secondary mb-1">
-                                <span>Paper Trays:</span>
-                                <span class="fw-semibold">${p.paperLevel}%</span>
-                            </div>
-                            <div class="progress mb-2" style="height: 6px;">
-                                <div class="progress-bar ${paperBg}" role="progressbar" style="width: ${p.paperLevel}%;"></div>
-                            </div>
-                        </div>
-                        
-                        <div class="border-top pt-2" style="font-size: 0.8rem;">
-                            <div class="d-flex justify-content-between text-secondary py-1">
-                                <span>Queue Size:</span>
-                                <span class="fw-semibold text-dark">${p.queueSize} jobs</span>
-                            </div>
-                            <div class="d-flex justify-content-between text-secondary py-1">
-                                <span>Response Time:</span>
-                                <span class="fw-semibold text-dark">${p.averageResponse}</span>
-                            </div>
-                            <div class="d-flex justify-content-between text-secondary py-1">
-                                <span>IPP URI:</span>
-                                <span class="font-monospace fw-bold text-truncate ms-2" style="max-width: 150px;" title="${p.ippEndpoint}">${p.ippEndpoint}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
+            const card = document.createElement('div');
+            card.className = 'printer-card';
+            const statusBar = document.createElement('div');
+            statusBar.className = `printer-status-bar ${p.status}`;
+            const body = document.createElement('div');
+            body.className = 'p-3';
+            const header = document.createElement('div');
+            header.className = 'd-flex justify-content-between align-items-center mb-2';
+            const name = document.createElement('span');
+            name.className = 'fw-bold font-monospace text-primary';
+            name.style.fontSize = '1rem';
+            name.textContent = p.name;
+            const status = document.createElement('span');
+            status.className = `badge ${badgeBg}`;
+            status.textContent = p.status;
+            header.appendChild(name);
+            header.appendChild(status);
+            const location = document.createElement('p');
+            location.className = 'small text-muted mb-2';
+            location.textContent = p.location;
+            const meters = document.createElement('div');
+            meters.className = 'border-top pt-2 mb-3';
+            meters.appendChild(createPrinterMeter('Toner Level:', p.tonerLevel, tonerBg));
+            meters.appendChild(createPrinterMeter('Paper Trays:', p.paperLevel, paperBg));
+            const details = document.createElement('div');
+            details.className = 'border-top pt-2';
+            details.style.fontSize = '0.8rem';
+            details.appendChild(createPrinterDetail('Queue Size:', `${p.queueSize} jobs`));
+            details.appendChild(createPrinterDetail('Response Time:', p.averageResponse));
+            details.appendChild(createPrinterDetail('IPP URI:', p.ippEndpoint, true));
+            body.appendChild(header);
+            body.appendChild(location);
+            body.appendChild(meters);
+            body.appendChild(details);
+            card.appendChild(statusBar);
+            card.appendChild(body);
+            col.appendChild(card);
             grid.appendChild(col);
         });
+    }
+
+    function createPrinterMeter(label, value, progressClass) {
+        const container = document.createElement('div');
+        const row = document.createElement('div');
+        row.className = 'd-flex justify-content-between small text-secondary mb-1';
+        const labelSpan = document.createElement('span');
+        labelSpan.textContent = label;
+        const valueSpan = document.createElement('span');
+        valueSpan.className = 'fw-semibold';
+        valueSpan.textContent = `${value}%`;
+        row.appendChild(labelSpan);
+        row.appendChild(valueSpan);
+        const progress = document.createElement('div');
+        progress.className = 'progress mb-2';
+        progress.style.height = '6px';
+        const progressBar = document.createElement('div');
+        progressBar.className = `progress-bar ${progressClass}`;
+        progressBar.setAttribute('role', 'progressbar');
+        progressBar.style.width = `${value}%`;
+        progress.appendChild(progressBar);
+        container.appendChild(row);
+        container.appendChild(progress);
+        return container;
+    }
+
+    function createPrinterDetail(label, value, truncate = false) {
+        const row = document.createElement('div');
+        row.className = 'd-flex justify-content-between text-secondary py-1';
+        const labelSpan = document.createElement('span');
+        labelSpan.textContent = label;
+        const valueSpan = document.createElement('span');
+        valueSpan.className = truncate
+            ? 'font-monospace fw-bold text-truncate ms-2'
+            : 'fw-semibold text-dark';
+        if (truncate) {
+            valueSpan.style.maxWidth = '150px';
+            valueSpan.title = value == null ? '' : String(value);
+        }
+        valueSpan.textContent = value == null ? '' : String(value);
+        row.appendChild(labelSpan);
+        row.appendChild(valueSpan);
+        return row;
     }
 
     // -------------------------------------------------------------
@@ -944,8 +1035,9 @@
             const range = document.getElementById('report-range').value;
             const dept = document.getElementById('report-dept').value;
             
-            let url = `/api/v1/admin/history?size=8`;
-            if (dept) url += `&department=${dept}`;
+            const params = new URLSearchParams({ size: 8 });
+            if (dept) params.set('department', dept);
+            const url = `/api/v1/admin/history?${params.toString()}`;
             
             const logsData = await apiRequest(url);
             
@@ -958,15 +1050,13 @@
                 logsData.content.forEach(log => {
                     const statusClass = log.status === 'SUCCESS' ? 'bg-success-subtle' : 'bg-danger-subtle';
                     const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td>${formatTimestamp(log.timestamp)}</td>
-                        <td>${log.user.domainUsername}</td>
-                        <td>${log.user.department}</td>
-                        <td>${log.printerName}</td>
-                        <td>${log.documentName}</td>
-                        <td class="text-end fw-semibold">${log.pageCount}</td>
-                        <td><span class="badge ${statusClass}">${log.status}</span></td>
-                    `;
+                    appendTextCell(tr, formatTimestamp(log.timestamp));
+                    appendTextCell(tr, log.user.domainUsername);
+                    appendTextCell(tr, log.user.department);
+                    appendTextCell(tr, log.printerName);
+                    appendTextCell(tr, log.documentName);
+                    appendTextCell(tr, log.pageCount, 'text-end fw-semibold');
+                    appendBadgeCell(tr, log.status, statusClass);
                     tbody.appendChild(tr);
                 });
             }
@@ -997,19 +1087,18 @@
 
         jobs.forEach(job => {
             const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td class="fw-bold">${job.name}</td>
-                <td class="text-wrap small" style="max-width: 250px;">${job.description}</td>
-                <td class="font-monospace text-secondary">${job.cronExpression}</td>
-                <td>${job.lastDuration}</td>
-                <td><span class="badge bg-success-subtle text-uppercase"><i class="fa-solid fa-check"></i> ${job.lastStatus}</span></td>
-                <td class="font-monospace small text-primary">${job.nextExecution}</td>
-                <td>
-                    <button class="btn btn-xs btn-outline-secondary py-0 px-2 btn-trigger-job" data-name="${job.name}">
-                        <i class="fa-solid fa-play"></i> Trigger Now
-                    </button>
-                </td>
-            `;
+            appendTextCell(tr, job.name, 'fw-bold');
+            const descCell = appendTextCell(tr, job.description, 'text-wrap small');
+            descCell.style.maxWidth = '250px';
+            appendTextCell(tr, job.cronExpression, 'font-monospace text-secondary');
+            appendTextCell(tr, job.lastDuration);
+            appendBadgeCell(tr, job.lastStatus, 'bg-success-subtle text-uppercase');
+            appendTextCell(tr, job.nextExecution, 'font-monospace small text-primary');
+            const actionCell = document.createElement('td');
+            appendActionButton(actionCell, 'btn btn-xs btn-outline-secondary py-0 px-2 btn-trigger-job', 'Trigger Now', {
+                name: job.name
+            });
+            tr.appendChild(actionCell);
             tbody.appendChild(tr);
         });
 
@@ -1120,7 +1209,15 @@
     // Audit Logs View
     // -------------------------------------------------------------
     async function loadAuditLogsView() {
-        const url = `/api/v1/admin/history?page=${state.logsParams.page}&size=${state.logsParams.size}&username=${state.logsParams.search}&correlationId=${state.logsParams.correlationId}&status=${state.logsParams.status}&printer=${state.logsParams.printer}`;
+        const params = new URLSearchParams({
+            page: state.logsParams.page,
+            size: state.logsParams.size,
+            username: state.logsParams.search,
+            correlationId: state.logsParams.correlationId,
+            status: state.logsParams.status,
+            printer: state.logsParams.printer
+        });
+        const url = `/api/v1/admin/history?${params.toString()}`;
         const data = await apiRequest(url);
         state.printLogs = data.content;
 
@@ -1144,18 +1241,16 @@
             const qAfter = log.status === 'SUCCESS' ? 15 : 5;
 
             const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td class="font-monospace">${formatTimestamp(log.timestamp)}</td>
-                <td class="font-monospace fw-bold text-primary">${log.correlationId}</td>
-                <td class="fw-semibold text-dark">${log.user.domainUsername}</td>
-                <td><span class="badge bg-secondary-subtle">${log.printerName}</span></td>
-                <td class="text-end fw-semibold text-dark">${log.pageCount}</td>
-                <td class="text-end text-muted">${qBefore}</td>
-                <td class="text-end text-muted">${qAfter}</td>
-                <td><span class="badge ${statusClass}">${log.status}</span></td>
-                <td class="font-monospace small">${mockIp}</td>
-                <td class="font-monospace small text-muted">${mockReqId}</td>
-            `;
+            appendTextCell(tr, formatTimestamp(log.timestamp), 'font-monospace');
+            appendTextCell(tr, log.correlationId, 'font-monospace fw-bold text-primary');
+            appendTextCell(tr, log.user.domainUsername, 'fw-semibold text-dark');
+            appendBadgeCell(tr, log.printerName, 'bg-secondary-subtle');
+            appendTextCell(tr, log.pageCount, 'text-end fw-semibold text-dark');
+            appendTextCell(tr, qBefore, 'text-end text-muted');
+            appendTextCell(tr, qAfter, 'text-end text-muted');
+            appendBadgeCell(tr, log.status, statusClass);
+            appendTextCell(tr, mockIp, 'font-monospace small');
+            appendTextCell(tr, mockReqId, 'font-monospace small text-muted');
             tbody.appendChild(tr);
         });
 
