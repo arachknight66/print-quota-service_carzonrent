@@ -1,0 +1,37 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/printquota
+    username: printuser
+    password: printpassword
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+logging:
+  level:
+    com.printkeep.quota: DEBUG
+    org.springframework.web: INFO
+    org.springframework.ldap: DEBUG
+    com.printkeep.quota.core.identity: DEBUG
+
+management:
+  endpoint:
+    health:
+      show-details: always
+
+app:
+  spool:
+    directory: ${java.io.tmpdir}/print-quota-spool
+  ldap:
+    urls:
+      - ${LDAP_URL:ldap://localhost:389}
+    base-dn: ${LDAP_BASE_DN:dc=company,dc=local}
+    username: ${LDAP_BIND_DN:cn=admin,dc=company,dc=local}
+    password: ${LDAP_BIND_PASSWORD:admin}
+    search-base: ${LDAP_SEARCH_BASE:ou=users}

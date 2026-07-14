@@ -1,0 +1,49 @@
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.next
+pom.xml.versionsBackup
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+!/.mvn/wrapper/maven-wrapper.jar
+
+# Avoid committing log files
+*.log
+logs/
+/var/log/print-quota/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+
+# Eclipse
+.metadata
+.classpath
+.project
+.settings/
+*.launch
+
+# NetBeans
+/nbproject/private/
+/build/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+# OS specific
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Local application properties override
+application-local.yml
+application-local.properties
+
+# Docker postgres data
+.postgres/

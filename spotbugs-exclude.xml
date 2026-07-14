@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <!-- Spring-managed collaborators, configuration beans, DTOs, and JPA entities intentionally retain references. -->
+    <Match>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+    <!-- Broad catches are used at scheduler/proxy boundaries to convert failures into operational responses. -->
+    <Match>
+        <Bug pattern="REC_CATCH_EXCEPTION,DE_MIGHT_IGNORE"/>
+    </Match>
+</FindBugsFilter>

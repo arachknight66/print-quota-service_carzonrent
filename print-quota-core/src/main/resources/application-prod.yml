@@ -1,0 +1,49 @@
+server:
+  port: ${SERVER_PORT:443}
+  ssl:
+    key-store: ${KEYSTORE_PATH:classpath:keystore.p12}
+    key-store-password: ${KEYSTORE_PASSWORD}
+    key-store-type: ${KEYSTORE_TYPE:PKCS12}
+    key-alias: ${KEY_ALIAS:printkeep}
+    enabled: ${SSL_ENABLED:true}
+
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/printquota}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    type: com.zaxxer.hikari.HikariDataSource
+    hikari:
+      pool-name: PrintQuotaHikariPool
+      maximum-pool-size: ${DB_POOL_MAX:20}
+      minimum-idle: ${DB_POOL_MIN_IDLE:5}
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      connection-timeout: 30000
+      data-source-properties:
+        cachePrepStmts: true
+        prepStmtCacheSize: 250
+        prepStmtCacheSqlLimit: 2048
+        useServerPrepStmts: true
+
+logging:
+  level:
+    com.printkeep.quota: INFO
+    org.springframework.web: WARN
+    org.springframework.ldap: WARN
+
+# Production LDAP overrides
+app:
+  ldap:
+    urls:
+      - ${LDAP_URL:ldaps://dc01.company.local:636}
+    ssl-enabled: ${LDAP_SSL_ENABLED:true}
+    connection-timeout: 3000
+    read-timeout: 3000
+    pool:
+      min-idle: 4
+      max-active: 16
+    sync:
+      enabled: ${LDAP_SYNC_ENABLED:true}
+      cron: ${LDAP_SYNC_CRON:0 */15 * * * *}

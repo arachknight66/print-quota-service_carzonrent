@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8">
+  <title>Carzonrent QA Deployment Status</title>
+</head>
+<body>
+  <center>
+    <h1>Carzonrent QA Deployment Status</h1>
+    <h2>Legacy HTML Operations Page</h2>
+    <p>Spring Boot 3.3 on CentOS Stream 9 behind Apache HTTP Server.</p>
+  </center>
+
+  <hr>
+
+  <table border="1" cellpadding="6" cellspacing="0" width="100%">
+    <caption><strong>Deployment Summary</strong></caption>
+    <tr>
+      <th align="left">Environment</th>
+      <td th:text="${info.environment}">QA</td>
+    </tr>
+    <tr>
+      <th align="left">Hostname</th>
+      <td th:text="${info.hostname}">qa.carzonrent</td>
+    </tr>
+    <tr>
+      <th align="left">Java Version</th>
+      <td th:text="${info.javaVersion}">21</td>
+    </tr>
+    <tr>
+      <th align="left">Spring Boot Version</th>
+      <td th:text="${info.springBootVersion}">3.3.x</td>
+    </tr>
+    <tr>
+      <th align="left">Apache Status</th>
+      <td th:text="${info.apacheStatus}">RUNNING</td>
+    </tr>
+    <tr>
+      <th align="left">Reverse Proxy Status</th>
+      <td th:text="${info.reverseProxyStatus}">ACTIVE</td>
+    </tr>
+    <tr>
+      <th align="left">Backend Address</th>
+      <td><code th:text="${info.backendAddress}">127.0.0.1:8085</code></td>
+    </tr>
+    <tr>
+      <th align="left">Deployment Status</th>
+      <td th:text="${info.deploymentStatus}">HEALTHY</td>
+    </tr>
+    <tr>
+      <th align="left">Current Time UTC</th>
+      <td th:text="${info.currentTime}">2026-07-13T00:00:00Z</td>
+    </tr>
+    <tr>
+      <th align="left">Build Version</th>
+      <td th:text="${info.buildVersion}">2.0.1</td>
+    </tr>
+    <tr>
+      <th align="left">Container Name</th>
+      <td th:text="${info.containerName}">qa.carzonrent</td>
+    </tr>
+    <tr>
+      <th align="left">Operating System</th>
+      <td th:text="${info.operatingSystem}">CentOS Stream 9</td>
+    </tr>
+  </table>
+
+  <h3>Service Endpoints</h3>
+  <ul>
+    <li><a href="/health">Health endpoint</a> - GET /health</li>
+    <li><a href="/info">Info endpoint</a> - GET /info</li>
+  </ul>
+
+  <h3>Reverse Proxy Architecture Diagram</h3>
+  <pre>
++----------------------+       +---------------------------+       +----------------------------+
+| Browser / QA User    | ----> | Apache HTTP Server :80    | ----> | Spring Boot 127.0.0.1:8085 |
+| qa.carzonrent.com    | HTTP  | Docker container gateway  | Proxy | Private backend only       |
++----------------------+       +---------------------------+       +----------------------------+
+  </pre>
+
+  <h3>Backend Isolation</h3>
+  <p>Spring Boot listens only on 127.0.0.1:8085 inside the container. Apache is the only public entry point.</p>
+
+  <hr>
+  <center>
+    <small>Carzonrent Platform Engineering - QA deployment - Build <span th:text="${info.buildVersion}">2.0.1</span></small>
+  </center>
+</body>
+</html>

@@ -1,0 +1,25 @@
+spring:
+  application:
+    name: qa-dashboard
+  main:
+    banner-mode: console
+  thymeleaf:
+    cache: true
+
+server:
+  address: 127.0.0.1
+  port: 8085
+  error:
+    whitelabel:
+      enabled: false
+
+carzonrent:
+  application-version: ${BUILD_VERSION:2.0.0}
+  container-name: ${CONTAINER_NAME:qa.carzonrent}
+
+server.forward-headers-strategy: native
+
+logging:
+  level:
+    root: INFO
+    com.carzonrent.platform.qadashboard: INFO

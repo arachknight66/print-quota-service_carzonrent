@@ -1,0 +1,5 @@
+.git
+.gitignore
+README.md
+verification-output.txt
+app/target/

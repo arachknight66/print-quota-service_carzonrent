@@ -1,0 +1,117 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: print-quota-db
+    environment:
+      POSTGRES_DB: ${DB_NAME:-printquota}
+      POSTGRES_USER: ${DB_USERNAME:-printuser}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - printquota-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  pgadmin:
+    image: dpage/pgadmin4:8.8
+    container_name: print-quota-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@company.local}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:?PGADMIN_PASSWORD is required}
+      PGADMIN_CONFIG_ENHANCED_COOKIE_PROTECTION: "True"
+    ports:
+      - "5050:80"
+    networks:
+      - printquota-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  ldap:
+    image: osixia/openldap:1.5.0
+    container_name: print-quota-ldap
+    environment:
+      LDAP_ORGANISATION: "Company"
+      LDAP_DOMAIN: "company.local"
+      LDAP_ADMIN_PASSWORD: ${LDAP_ADMIN_PASSWORD:?LDAP_ADMIN_PASSWORD is required}
+      LDAP_TLS: "false"
+    ports:
+      - "389:389"
+      - "636:636"
+    networks:
+      - printquota-net
+    healthcheck:
+      test: ["CMD", "ldapsearch", "-x", "-H", "ldap://localhost:389", "-b", "", "-s", "base", "namingContexts"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  print-quota-app:
+    build:
+      context: .
+      dockerfile: docker/app/Dockerfile
+    container_name: print-quota-service
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SERVER_PORT: 8080
+      SSL_ENABLED: "false"
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${DB_NAME:-printquota}
+      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME:-printuser}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      LDAP_URL: ldap://ldap:389
+      LDAP_SSL_ENABLED: "false"
+      LDAP_BASE_DN: dc=company,dc=local
+      LDAP_BIND_DN: cn=admin,dc=company,dc=local
+      LDAP_BIND_PASSWORD: ${LDAP_BIND_PASSWORD:?LDAP_BIND_PASSWORD is required}
+      LDAP_SEARCH_BASE: ou=users
+      LDAP_USER_SEARCH_FILTER: ${LDAP_USER_SEARCH_FILTER:-(uid={0})}
+      LDAP_GROUP_SEARCH_BASE: ou=groups
+      LDAP_GROUP_SEARCH_FILTER: ${LDAP_GROUP_SEARCH_FILTER:-(member={0})}
+      LDAP_SYNC_ENABLED: "false"
+      LOG_PATH: /app/logs
+    volumes:
+      - app_logs:/app/logs
+      - app_reports:/app/reports
+      - app_spool:/app/spool
+      - app_certs:/app/certs:ro
+    networks:
+      - printquota-net
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    user: "10001:10001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ldap:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    name: printquota_postgres_data
+  app_logs:
+    name: printquota_app_logs
+  app_reports:
+    name: printquota_app_reports
+  app_spool:
+    name: printquota_app_spool
+  app_certs:
+    name: printquota_app_certs
+
+networks:
+  printquota-net:
+    name: printquota-net
+    driver: bridge
