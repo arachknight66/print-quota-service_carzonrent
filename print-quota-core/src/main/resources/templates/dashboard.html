@@ -3,175 +3,1012 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Carzonrent Enterprise QA Dashboard</title>
+    <title>PrintKeep Enterprise Dashboard | Carzonrent</title>
+    
+    <!-- Fonts & CSS Libraries -->
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.2/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+    
+    <!-- JS Libraries (Deferred) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script defer th:src="@{/js/dashboard.js}"></script>
 </head>
-<body>
-    <div class="background-glow glow-1"></div>
-    <div class="background-glow glow-2"></div>
-
-    <div class="container">
-        <!-- Header -->
-        <header class="header">
-            <div class="logo-area">
-                <div class="logo-icon">C</div>
-                <div class="logo-text">
-                    <h1>Carzonrent</h1>
-                    <span>Enterprise Infrastructure QA Panel</span>
+<body class="light-mode">
+    <div class="app-container">
+        
+        <!-- Top Navigation Bar -->
+        <nav class="navbar navbar-expand-lg sticky-top">
+            <div class="container-fluid px-3">
+                <button class="btn sidebar-toggle-btn me-2" id="sidebar-toggle" aria-label="Toggle Sidebar">
+                    <i class="fa-solid fa-bars text-white"></i>
+                </button>
+                
+                <a class="navbar-brand d-flex align-items-center" href="#/dashboard">
+                    <div class="logo-box me-2">C</div>
+                    <span class="logo-title">PrintKeep</span>
+                    <span class="logo-desc ms-2 border-start ps-2 text-muted d-none d-sm-inline">Enterprise Print Quota</span>
+                </a>
+                
+                <div class="ms-2 d-flex align-items-center">
+                    <span class="badge bg-warning text-dark text-uppercase font-monospace px-2 py-1 small" th:text="${environment}">QA (Phase 1)</span>
+                </div>
+                
+                <div class="ms-auto d-flex align-items-center gap-3">
+                    <!-- Search Everywhere -->
+                    <div class="search-box-container d-none d-md-block">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-secondary border-secondary text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
+                            <input type="text" class="form-control bg-secondary border-secondary text-white" id="search-everywhere" placeholder="Search everywhere (Ctrl+/)...">
+                        </div>
+                    </div>
+                    
+                    <!-- Theme Toggle -->
+                    <button class="btn theme-toggle-btn" id="theme-toggle" title="Toggle Theme" aria-label="Toggle Dark Mode">
+                        <i class="fa-solid fa-moon"></i>
+                    </button>
+                    
+                    <!-- Notifications Dropdown -->
+                    <div class="dropdown">
+                        <button class="btn notification-btn position-relative" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fa-regular fa-bell"></i>
+                            <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
+                                <span class="visually-hidden">New alerts</span>
+                            </span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end notification-dropdown p-0 shadow border-secondary">
+                            <li class="dropdown-header border-bottom border-secondary bg-secondary text-white py-2">System Notifications</li>
+                            <li>
+                                <a class="dropdown-item py-2 border-bottom border-light-subtle" href="#/health">
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span class="text-warning fw-semibold"><i class="fa-solid fa-triangle-exclamation me-1"></i> Low Toner Warning</span>
+                                        <span class="small text-muted">10m ago</span>
+                                    </div>
+                                    <span class="small text-secondary">Printer 'printer-hr' toner is below 15%.</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item py-2 border-bottom border-light-subtle" href="#/audit-logs">
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span class="text-danger fw-semibold"><i class="fa-solid fa-circle-xmark me-1"></i> Quota Violation</span>
+                                        <span class="small text-muted">1h ago</span>
+                                    </div>
+                                    <span class="small text-secondary">User 'rahul.s' rejected due to quota limit.</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item py-2" href="#/scheduled-jobs">
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span class="text-success fw-semibold"><i class="fa-solid fa-circle-check me-1"></i> Sync Successful</span>
+                                        <span class="small text-muted">2h ago</span>
+                                    </div>
+                                    <span class="small text-secondary">Active Directory sync completed.</span>
+                                </a>
+                            </li>
+                            <li class="text-center bg-secondary py-2 rounded-bottom">
+                                <a href="#/audit-logs" class="text-white small text-decoration-none">View All System Logs</a>
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Administrator Identity -->
+                    <div class="dropdown">
+                        <button class="btn admin-profile-btn d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <div class="admin-avatar">AD</div>
+                            <span class="admin-name d-none d-sm-inline">IT Administrator</span>
+                            <i class="fa-solid fa-chevron-down small text-muted"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow border-secondary">
+                            <li class="dropdown-header">System Operations</li>
+                            <li><a class="dropdown-item" href="#/settings"><i class="fa-solid fa-sliders me-2"></i> Settings</a></li>
+                            <li><a class="dropdown-item" href="#/health"><i class="fa-solid fa-heart-pulse me-2"></i> Health Panel</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item text-danger" href="/logout" id="logout-link">
+                                    <i class="fa-solid fa-right-from-bracket me-2"></i> Logout
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
             </div>
-            <div class="server-time">
-                <span class="pulse-dot"></span>
-                <span class="time-label">Server Time:</span>
-                <span class="time-value" th:text="${currentTime}">2026-07-13 15:30:00</span>
-            </div>
-        </header>
-
-        <!-- Infrastructure Banner -->
-        <section class="banner-card">
-            <div class="banner-content">
-                <h2>Phase 1 Deployment Architecture Active</h2>
-                <p>The staging backend is containerized under CentOS Stream 9. The backend binds exclusively to loopback interface <code>127.0.0.1:8085</code> and is reverse proxied through Apache HTTP Server on port <code>80</code>.</p>
-            </div>
-            <div class="architecture-badge">
-                <span class="badge-title">TARGET GATEWAY</span>
-                <span class="badge-value">qa.carzonrent.com</span>
-            </div>
-        </section>
-
-        <!-- Status & Metrics Grid -->
-        <div class="metrics-grid">
-            <!-- Metric Card 1: Environment -->
-            <div class="metric-card">
-                <div class="card-icon env-icon">⚙️</div>
-                <div class="card-info">
-                    <h3>Environment</h3>
-                    <p class="metric-value" th:text="${environment}">QA (Phase 1)</p>
+        </nav>
+        
+        <!-- Main Layout -->
+        <div class="main-layout">
+            
+            <!-- Left Sidebar -->
+            <aside class="sidebar" id="sidebar">
+                <ul class="sidebar-nav">
+                    <li class="nav-item">
+                        <a href="#/dashboard" class="nav-link active" data-view="dashboard">
+                            <i class="fa-solid fa-gauge"></i> <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#/print-queue" class="nav-link" data-view="print-queue">
+                            <i class="fa-solid fa-print"></i> <span>Print Queue</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#/users" class="nav-link" data-view="users">
+                            <i class="fa-solid fa-users"></i> <span>Users</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#/quota-management" class="nav-link" data-view="quota-management">
+                            <i class="fa-solid fa-pie-chart"></i> <span>Quota Management</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#/departments" class="nav-link" data-view="departments">
+                            <i class="fa-solid fa-sitemap"></i> <span>Departments</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#/printers" class="nav-link" data-view="printers">
+                            <i class="fa-solid fa-desktop"></i> <span>Printers</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#/reports" class="nav-link" data-view="reports">
+                            <i class="fa-solid fa-chart-line"></i> <span>Reports</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#/scheduled-jobs" class="nav-link" data-view="scheduled-jobs">
+                            <i class="fa-regular fa-clock"></i> <span>Scheduled Jobs</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#/metrics" class="nav-link" data-view="metrics">
+                            <i class="fa-solid fa-chart-bar"></i> <span>Metrics</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#/audit-logs" class="nav-link" data-view="audit-logs">
+                            <i class="fa-solid fa-file-shield"></i> <span>Audit Logs</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#/settings" class="nav-link" data-view="settings">
+                            <i class="fa-solid fa-gear"></i> <span>Settings</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#/health" class="nav-link" data-view="health">
+                            <i class="fa-solid fa-square-poll-horizontal"></i> <span>Health</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#/about" class="nav-link" data-view="about">
+                            <i class="fa-solid fa-circle-info"></i> <span>About</span>
+                        </a>
+                    </li>
+                </ul>
+            </aside>
+            
+            <!-- Main Content Pane -->
+            <main class="content-pane" id="main-content">
+                <!-- Breadcrumb Navigation -->
+                <nav aria-label="breadcrumb" class="mb-3">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="#/dashboard" class="text-decoration-none">PrintKeep</a></li>
+                        <li class="breadcrumb-item active" id="breadcrumb-current-view">Dashboard</li>
+                    </ol>
+                </nav>
+                
+                <!-- Toast Notification Container -->
+                <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1050;">
+                    <div id="app-toast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+                        <div class="toast-header">
+                            <strong class="me-auto" id="toast-title">System Alert</strong>
+                            <small class="text-muted" id="toast-time">Just now</small>
+                            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+                        </div>
+                        <div class="toast-body" id="toast-message">
+                            Notification message.
+                        </div>
+                    </div>
                 </div>
-            </div>
-
-            <!-- Metric Card 2: Hostname -->
-            <div class="metric-card">
-                <div class="card-icon host-icon">🖥️</div>
-                <div class="card-info">
-                    <h3>Hostname</h3>
-                    <p class="metric-value" th:text="${hostname}">qa.carzonrent</p>
+                
+                <!-- Loading Indicator Overlay -->
+                <div id="loading-overlay" class="loading-overlay d-none">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading telemetry data...</span>
+                    </div>
                 </div>
-            </div>
 
-            <!-- Metric Card 3: OS -->
-            <div class="metric-card">
-                <div class="card-icon os-icon">🐧</div>
-                <div class="card-info">
-                    <h3>Operating System</h3>
-                    <p class="metric-value" th:text="${os}">CentOS Stream 9</p>
-                </div>
-            </div>
+                <!-- 13 Views (swapped dynamically) -->
+                
+                <!-- 1. Dashboard -->
+                <section id="view-dashboard" class="content-view">
+                    <div class="row g-3 mb-4">
+                        <!-- KPI 1 -->
+                        <div class="col-6 col-md-3">
+                            <div class="kpi-card shadow-sm">
+                                <div class="kpi-title">Total Users</div>
+                                <div class="kpi-value" id="kpi-total-users">200</div>
+                                <div class="kpi-desc text-muted"><span class="text-success"><i class="fa-solid fa-circle-check"></i> Connected</span> via LDAP</div>
+                            </div>
+                        </div>
+                        <!-- KPI 2 -->
+                        <div class="col-6 col-md-3">
+                            <div class="kpi-card shadow-sm">
+                                <div class="kpi-title">Active Printers</div>
+                                <div class="kpi-value" id="kpi-active-printers">3</div>
+                                <div class="kpi-desc text-muted"><span class="text-success"><i class="fa-solid fa-square-check"></i> 100%</span> online cluster</div>
+                            </div>
+                        </div>
+                        <!-- KPI 3 -->
+                        <div class="col-6 col-md-3">
+                            <div class="kpi-card shadow-sm">
+                                <div class="kpi-title">Today's Prints</div>
+                                <div class="kpi-value" id="kpi-today-prints">342</div>
+                                <div class="kpi-desc text-muted">Pages successfully printed</div>
+                            </div>
+                        </div>
+                        <!-- KPI 4 -->
+                        <div class="col-6 col-md-3">
+                            <div class="kpi-card shadow-sm">
+                                <div class="kpi-title">Remaining Monthly Quota</div>
+                                <div class="kpi-value" id="kpi-remaining-quota">16,231</div>
+                                <div class="kpi-desc text-muted">Allocated pooled balance</div>
+                            </div>
+                        </div>
+                        <!-- KPI 5 -->
+                        <div class="col-6 col-md-3">
+                            <div class="kpi-card shadow-sm">
+                                <div class="kpi-title">Failed Jobs</div>
+                                <div class="kpi-value text-danger" id="kpi-failed-jobs">14</div>
+                                <div class="kpi-desc text-muted">Network & paper failures</div>
+                            </div>
+                        </div>
+                        <!-- KPI 6 -->
+                        <div class="col-6 col-md-3">
+                            <div class="kpi-card shadow-sm">
+                                <div class="kpi-title">Quota Violations</div>
+                                <div class="kpi-value text-warning" id="kpi-quota-violations">28</div>
+                                <div class="kpi-desc text-muted">Rejected due to limits</div>
+                            </div>
+                        </div>
+                        <!-- KPI 7 -->
+                        <div class="col-6 col-md-3">
+                            <div class="kpi-card shadow-sm">
+                                <div class="kpi-title">Printer Availability</div>
+                                <div class="kpi-value text-success" id="kpi-printer-availability">99.8%</div>
+                                <div class="kpi-desc text-muted">Operational ping success</div>
+                            </div>
+                        </div>
+                        <!-- KPI 8 -->
+                        <div class="col-6 col-md-3">
+                            <div class="kpi-card shadow-sm">
+                                <div class="kpi-title">Average Response Time</div>
+                                <div class="kpi-value" id="kpi-avg-response">142ms</div>
+                                <div class="kpi-desc text-muted">IPP packet spooling delay</div>
+                            </div>
+                        </div>
+                    </div>
 
-            <!-- Metric Card 4: Java Version -->
-            <div class="metric-card">
-                <div class="card-icon java-icon">☕</div>
-                <div class="card-info">
-                    <h3>Java Platform</h3>
-                    <p class="metric-value" th:text="${javaVersion}">Java 21</p>
-                </div>
-            </div>
+                    <!-- Charts Grid -->
+                    <div class="row g-3">
+                        <div class="col-12 col-lg-4">
+                            <div class="card shadow-sm h-100">
+                                <div class="card-header bg-white py-2 fw-semibold">Monthly Print Volume</div>
+                                <div class="card-body py-3">
+                                    <div class="chart-container"><canvas id="chart-print-volume"></canvas></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-4">
+                            <div class="card shadow-sm h-100">
+                                <div class="card-header bg-white py-2 fw-semibold">Department Usage</div>
+                                <div class="card-body py-3">
+                                    <div class="chart-container"><canvas id="chart-department-usage"></canvas></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-4">
+                            <div class="card shadow-sm h-100">
+                                <div class="card-header bg-white py-2 fw-semibold">Printer Utilization</div>
+                                <div class="card-body py-3">
+                                    <div class="chart-container"><canvas id="chart-printer-utilization"></canvas></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-4">
+                            <div class="card shadow-sm h-100">
+                                <div class="card-header bg-white py-2 fw-semibold">Quota Consumption</div>
+                                <div class="card-body py-3">
+                                    <div class="chart-container"><canvas id="chart-quota-consumption"></canvas></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-4">
+                            <div class="card shadow-sm h-100">
+                                <div class="card-header bg-white py-2 fw-semibold">Top Users (Pages)</div>
+                                <div class="card-body py-3">
+                                    <div class="chart-container"><canvas id="chart-top-users"></canvas></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-4">
+                            <div class="card shadow-sm h-100">
+                                <div class="card-header bg-white py-2 fw-semibold">Print Success Rate</div>
+                                <div class="card-body py-3">
+                                    <div class="chart-container"><canvas id="chart-success-rate"></canvas></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- 2. Print Queue -->
+                <section id="view-print-queue" class="content-view d-none">
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
+                            <span class="fw-semibold">Active Spooled Print Queue</span>
+                            <span class="badge bg-primary px-2" id="queue-count">2 Active Jobs</span>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover table-striped mb-0 text-nowrap">
+                                    <thead>
+                                        <tr>
+                                            <th>Job ID</th>
+                                            <th>Timestamp</th>
+                                            <th>Correlation ID</th>
+                                            <th>User</th>
+                                            <th>Document Name</th>
+                                            <th>Printer</th>
+                                            <th>Pages</th>
+                                            <th>File Size</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="print-queue-tbody">
+                                        <!-- Javascript filled -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- 3. Users -->
+                <section id="view-users" class="content-view d-none">
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header bg-white py-2 d-flex flex-wrap gap-2 justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="fw-semibold">Active Directory User Database</span>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-sm btn-outline-secondary" id="btn-export-users-csv"><i class="fa-solid fa-file-csv me-1"></i> CSV</button>
+                                <button class="btn btn-sm btn-outline-secondary" id="btn-export-users-excel"><i class="fa-solid fa-file-excel me-1"></i> Excel</button>
+                            </div>
+                        </div>
+                        <!-- Filters -->
+                        <div class="card-body border-bottom bg-light py-2">
+                            <div class="row g-2">
+                                <div class="col-12 col-md-4">
+                                    <input type="text" class="form-control form-control-sm" id="users-filter-search" placeholder="Search by Username/Employee ID...">
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <select class="form-select form-select-sm" id="users-filter-dept">
+                                        <option value="">All Departments</option>
+                                    </select>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <select class="form-select form-select-sm" id="users-filter-status">
+                                        <option value="">All Statuses</option>
+                                        <option value="ACTIVE">Active</option>
+                                        <option value="DISABLED">Disabled</option>
+                                    </select>
+                                </div>
+                                <div class="col-12 col-md-2">
+                                    <button class="btn btn-sm btn-primary w-100" id="btn-users-reset-filters">Clear Filters</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover table-striped mb-0 text-nowrap" id="users-table">
+                                    <thead>
+                                        <tr>
+                                            <th class="sortable" data-col="id">Employee ID <i class="fa-solid fa-sort"></i></th>
+                                            <th class="sortable" data-col="domainUsername">Username <i class="fa-solid fa-sort"></i></th>
+                                            <th class="sortable" data-col="department">Department <i class="fa-solid fa-sort"></i></th>
+                                            <th class="sortable text-end" data-col="allocatedPages">Monthly Quota <i class="fa-solid fa-sort"></i></th>
+                                            <th class="sortable text-end" data-col="usedPages">Used Pages <i class="fa-solid fa-sort"></i></th>
+                                            <th class="sortable text-end" data-col="remainingPages">Remaining <i class="fa-solid fa-sort"></i></th>
+                                            <th class="sortable" data-col="isActive">Status <i class="fa-solid fa-sort"></i></th>
+                                            <th>Last Login</th>
+                                            <th>LDAP Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="users-tbody">
+                                        <!-- Javascript filled -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <!-- Pagination -->
+                        <div class="card-footer bg-white d-flex justify-content-between align-items-center py-2">
+                            <span class="small text-muted" id="users-page-info">Showing 1 to 20 of 200 users</span>
+                            <nav aria-label="User table navigation">
+                                <ul class="pagination pagination-sm mb-0" id="users-pagination">
+                                    <!-- Javascript filled -->
+                                </ul>
+                            </nav>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- 4. Quota Management -->
+                <section id="view-quota-management" class="content-view d-none">
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
+                            <span class="fw-semibold">Monthly Quota Allocations & Adjustments</span>
+                            <button class="btn btn-sm btn-danger" id="btn-global-reset-quotas"><i class="fa-solid fa-rotate me-1"></i> Global Quota Reset</button>
+                        </div>
+                        <div class="card-body p-3 border-bottom bg-light">
+                            <div class="row g-2 align-items-center">
+                                <div class="col-12 col-md-6 text-muted small">
+                                    Adjust allocated printing budgets for individual users. All quota adjustments are audited immediately. Resets will apply the system-wide default quota limit (100 pages).
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <input type="text" class="form-control form-control-sm" id="quota-search" placeholder="Search user to adjust...">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover table-striped mb-0 text-nowrap">
+                                    <thead>
+                                        <tr>
+                                            <th>Username</th>
+                                            <th>Department</th>
+                                            <th>Allocated Pages</th>
+                                            <th>Used Pages</th>
+                                            <th>Remaining Pages</th>
+                                            <th>Quick Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="quota-tbody">
+                                        <!-- Javascript filled -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-white d-flex justify-content-between align-items-center py-2">
+                            <span class="small text-muted" id="quota-page-info">Showing 1 to 20 of 200 records</span>
+                            <nav aria-label="Quota navigation">
+                                <ul class="pagination pagination-sm mb-0" id="quota-pagination">
+                                    <!-- Javascript filled -->
+                                </ul>
+                            </nav>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- 5. Departments -->
+                <section id="view-departments" class="content-view d-none">
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header bg-white py-2 fw-semibold">Departmental Print Analytics</div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover table-striped mb-0 text-nowrap">
+                                    <thead>
+                                        <tr>
+                                            <th>Department Name</th>
+                                            <th>Assigned Users</th>
+                                            <th>Total Print Budget</th>
+                                            <th>Consumed Pages</th>
+                                            <th>Available Pool</th>
+                                            <th>Usage Graph</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="departments-tbody">
+                                        <!-- Javascript filled -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- 6. Printers -->
+                <section id="view-printers" class="content-view d-none">
+                    <div class="row g-3" id="printers-grid">
+                        <!-- Javascript dynamically generates printer cards -->
+                    </div>
+                </section>
+                
+                <!-- 7. Reports -->
+                <section id="view-reports" class="content-view d-none">
+                    <div class="row g-3">
+                        <div class="col-12 col-md-4">
+                            <div class="card shadow-sm">
+                                <div class="card-header bg-white py-2 fw-semibold">Generate Administrative Report</div>
+                                <div class="card-body">
+                                    <form id="report-generator-form">
+                                        <div class="mb-3">
+                                            <label for="report-range" class="form-label small fw-semibold text-muted">Date Range Profile</label>
+                                            <select class="form-select form-select-sm" id="report-range">
+                                                <option value="daily">Daily Summary</option>
+                                                <option value="weekly">Weekly Compilation</option>
+                                                <option value="monthly" selected>Monthly Audit</option>
+                                                <option value="custom">Custom Range</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <div id="custom-range-inputs" class="mb-3 d-none">
+                                            <div class="row g-2">
+                                                <div class="col-6">
+                                                    <label for="report-start" class="form-label small text-muted">Start Date</label>
+                                                    <input type="date" class="form-control form-control-sm" id="report-start">
+                                                </div>
+                                                <div class="col-6">
+                                                    <label for="report-end" class="form-label small text-muted">End Date</label>
+                                                    <input type="date" class="form-control form-control-sm" id="report-end">
+                                                </div>
+                                            </div>
+                                        </div>
 
-            <!-- Metric Card 5: Spring Boot Version -->
-            <div class="metric-card">
-                <div class="card-icon spring-icon">🌱</div>
-                <div class="card-info">
-                    <h3>Spring Boot</h3>
-                    <p class="metric-value">v<span th:text="${springBootVersion}">3.3.0</span></p>
-                </div>
-            </div>
+                                        <div class="mb-3">
+                                            <label for="report-dept" class="form-label small fw-semibold text-muted">Filter Department</label>
+                                            <select class="form-select form-select-sm" id="report-dept">
+                                                <option value="">All Departments</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <div class="d-grid gap-2">
+                                            <button type="button" class="btn btn-sm btn-primary" id="btn-report-preview"><i class="fa-solid fa-magnifying-glass me-1"></i> Preview Report</button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-report-download-csv"><i class="fa-solid fa-file-csv me-1"></i> Download CSV</button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-report-download-excel"><i class="fa-solid fa-file-excel me-1"></i> Download Excel</button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-report-email"><i class="fa-solid fa-envelope me-1"></i> Email Report</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-12 col-md-8">
+                            <div class="card shadow-sm h-100">
+                                <div class="card-header bg-white py-2 fw-semibold">Report Preview Pane</div>
+                                <div class="card-body p-0 d-flex flex-column" id="report-preview-pane">
+                                    <div class="p-4 text-center text-muted my-auto" id="report-preview-empty">
+                                        <i class="fa-solid fa-chart-pie fa-2x mb-2 text-secondary"></i>
+                                        <p class="mb-0 small">Select parameters and click "Preview Report" to display metrics.</p>
+                                    </div>
+                                    <div class="table-responsive d-none" id="report-preview-table-container">
+                                        <table class="table table-hover table-striped mb-0 text-nowrap small">
+                                            <thead>
+                                                <tr>
+                                                    <th>Timestamp</th>
+                                                    <th>User</th>
+                                                    <th>Department</th>
+                                                    <th>Printer</th>
+                                                    <th>Document</th>
+                                                    <th>Pages</th>
+                                                    <th>Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="report-preview-tbody">
+                                                <!-- Dynamic preview contents -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- 8. Scheduled Jobs -->
+                <section id="view-scheduled-jobs" class="content-view d-none">
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header bg-white py-2 fw-semibold">Infrastructure Cron Scheduler</div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover table-striped mb-0 text-nowrap">
+                                    <thead>
+                                        <tr>
+                                            <th>Job Identifier</th>
+                                            <th>Description</th>
+                                            <th>Cron Schedule</th>
+                                            <th>Last Duration</th>
+                                            <th>Last Execution Status</th>
+                                            <th>Next Execution Time</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="scheduled-jobs-tbody">
+                                        <!-- Javascript filled -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- 9. Metrics -->
+                <section id="view-metrics" class="content-view d-none">
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <div class="card shadow-sm">
+                                <div class="card-header bg-white py-2 fw-semibold">JVM Heap & Non-Heap Memory</div>
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between mb-1 small text-muted">
+                                        <span>Heap Allocation Usage</span>
+                                        <span id="metrics-jvm-mem-text">0 MB / 0 MB (0%)</span>
+                                    </div>
+                                    <div class="progress mb-3" style="height: 12px;">
+                                        <div class="progress-bar" role="progressbar" style="width: 0%;" id="metrics-jvm-mem-progress"></div>
+                                    </div>
+                                    <div class="row text-center mt-3 g-2">
+                                        <div class="col-4 border-end">
+                                            <div class="small text-muted">Used Heap</div>
+                                            <div class="fw-semibold text-primary" id="metrics-jvm-used">0 MB</div>
+                                        </div>
+                                        <div class="col-4 border-end">
+                                            <div class="small text-muted">Committed</div>
+                                            <div class="fw-semibold text-secondary" id="metrics-jvm-committed">0 MB</div>
+                                        </div>
+                                        <div class="col-4">
+                                            <div class="small text-muted">Max Capacity</div>
+                                            <div class="fw-semibold text-dark" id="metrics-jvm-max">0 MB</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-12 col-md-6">
+                            <div class="card shadow-sm">
+                                <div class="card-header bg-white py-2 fw-semibold">Processor & CPU Utilization</div>
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between mb-1 small text-muted">
+                                        <span>System CPU Load</span>
+                                        <span id="metrics-cpu-text">0%</span>
+                                    </div>
+                                    <div class="progress mb-3" style="height: 12px;">
+                                        <div class="progress-bar bg-success" role="progressbar" style="width: 0%;" id="metrics-cpu-progress"></div>
+                                    </div>
+                                    <div class="row text-center mt-3 g-2">
+                                        <div class="col-6 border-end">
+                                            <div class="small text-muted">Runtime Environment</div>
+                                            <div class="fw-semibold" id="metrics-os-runtime">CentOS Runtime</div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="small text-muted">JVM Available Processors</div>
+                                            <div class="fw-semibold text-dark" id="metrics-cpu-cores">8 Cores</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
-            <!-- Metric Card 6: Backend Port -->
-            <div class="metric-card">
-                <div class="card-icon port-icon">🔒</div>
-                <div class="card-info">
-                    <h3>Backend Address</h3>
-                    <p class="metric-value" th:text="${backendAddress}">http://127.0.0.1:8085/</p>
-                </div>
-            </div>
+                        <div class="col-12 col-md-4">
+                            <div class="card shadow-sm">
+                                <div class="card-header bg-white py-2 fw-semibold">Hikari Database Connection Pool</div>
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <span class="small text-muted">PostgreSQL Target Pool</span>
+                                        <span class="badge bg-success" id="metrics-db-status">CONNECTED</span>
+                                    </div>
+                                    <div class="row text-center g-2">
+                                        <div class="col-4 border-end">
+                                            <div class="small text-muted">Active</div>
+                                            <div class="fw-semibold text-danger" id="metrics-db-active">0</div>
+                                        </div>
+                                        <div class="col-4 border-end">
+                                            <div class="small text-muted">Idle</div>
+                                            <div class="fw-semibold text-success" id="metrics-db-idle">0</div>
+                                        </div>
+                                        <div class="col-4">
+                                            <div class="small text-muted">Max Pool</div>
+                                            <div class="fw-semibold" id="metrics-db-max">0</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-md-8">
+                            <div class="card shadow-sm">
+                                <div class="card-header bg-white py-2 fw-semibold">HTTP Inbound Request Rate</div>
+                                <div class="card-body p-0">
+                                    <table class="table table-hover table-striped mb-0 text-nowrap small">
+                                        <thead>
+                                            <tr>
+                                                <th>URI Endpoint</th>
+                                                <th>HTTP Method</th>
+                                                <th>Total Inbound Invocations</th>
+                                                <th>Average Processing Latency</th>
+                                                <th>Rate Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="metrics-http-tbody">
+                                            <!-- Dynamic table rows -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- 10. Audit Logs -->
+                <section id="view-audit-logs" class="content-view d-none">
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header bg-white py-2 d-flex flex-wrap gap-2 justify-content-between align-items-center">
+                            <span class="fw-semibold">System Audit & Access Logs</span>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-sm btn-outline-secondary" id="btn-export-logs-csv"><i class="fa-solid fa-file-csv me-1"></i> CSV</button>
+                                <button class="btn btn-sm btn-outline-secondary" id="btn-export-logs-excel"><i class="fa-solid fa-file-excel me-1"></i> Excel</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Filters -->
+                        <div class="card-body border-bottom bg-light py-2">
+                            <div class="row g-2">
+                                <div class="col-12 col-md-3">
+                                    <input type="text" class="form-control form-control-sm" id="logs-filter-search" placeholder="Search by Username/Document...">
+                                </div>
+                                <div class="col-6 col-md-2">
+                                    <input type="text" class="form-control form-control-sm" id="logs-filter-corr" placeholder="Correlation ID...">
+                                </div>
+                                <div class="col-6 col-md-2">
+                                    <select class="form-select form-select-sm" id="logs-filter-status">
+                                        <option value="">All Statuses</option>
+                                        <option value="SUCCESS">SUCCESS</option>
+                                        <option value="REJECTED_QUOTA">REJECTED_QUOTA</option>
+                                        <option value="ERROR">ERROR</option>
+                                    </select>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <select class="form-select form-select-sm" id="logs-filter-printer">
+                                        <option value="">All Printers</option>
+                                    </select>
+                                </div>
+                                <div class="col-6 col-md-2">
+                                    <button class="btn btn-sm btn-primary w-100" id="btn-logs-reset-filters">Clear</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover table-striped mb-0 text-nowrap text-secondary" id="logs-table" style="font-size: 0.85rem;">
+                                    <thead>
+                                        <tr>
+                                            <th class="sortable text-dark" data-col="timestamp">Timestamp <i class="fa-solid fa-sort"></i></th>
+                                            <th class="text-dark">Correlation ID</th>
+                                            <th class="sortable text-dark" data-col="username">User <i class="fa-solid fa-sort"></i></th>
+                                            <th class="sortable text-dark" data-col="printerName">Printer <i class="fa-solid fa-sort"></i></th>
+                                            <th class="sortable text-dark text-end" data-col="pageCount">Pages <i class="fa-solid fa-sort"></i></th>
+                                            <th class="text-dark text-end">Quota Before</th>
+                                            <th class="text-dark text-end">Quota After</th>
+                                            <th class="sortable text-dark" data-col="status">Status <i class="fa-solid fa-sort"></i></th>
+                                            <th class="text-dark">IP Address</th>
+                                            <th class="text-dark">Request ID</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="logs-tbody">
+                                        <!-- Javascript filled -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-white d-flex justify-content-between align-items-center py-2">
+                            <span class="small text-muted" id="logs-page-info">Showing 1 to 20 of 200 logs</span>
+                            <nav aria-label="Audit log navigation">
+                                <ul class="pagination pagination-sm mb-0" id="logs-pagination">
+                                    <!-- Javascript filled -->
+                                </ul>
+                            </nav>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- 11. Settings -->
+                <section id="view-settings" class="content-view d-none">
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header bg-white py-2 fw-semibold">Infrastructure Integration Parameters</div>
+                        <div class="card-body">
+                            <form id="settings-form">
+                                <h5 class="border-bottom pb-2 mb-3 text-secondary" style="font-size: 1rem;"><i class="fa-solid fa-network-wired me-2"></i>Active Directory / LDAP Security Integration</h5>
+                                <div class="row g-3 mb-4">
+                                    <div class="col-12 col-md-6">
+                                        <label for="settings-ldap-url" class="form-label small text-muted">Primary Active Directory Server URL</label>
+                                        <input type="text" class="form-control form-control-sm" id="settings-ldap-url" value="ldap://localhost:389" readonly>
+                                    </div>
+                                    <div class="col-12 col-md-6">
+                                        <label for="settings-ldap-base" class="form-label small text-muted">LDAP User Base Directory DN</label>
+                                        <input type="text" class="form-control form-control-sm" id="settings-ldap-base" value="dc=company,dc=local" readonly>
+                                    </div>
+                                    <div class="col-12 col-md-6">
+                                        <label for="settings-ldap-bind" class="form-label small text-muted">Service Account Authentication DN</label>
+                                        <input type="text" class="form-control form-control-sm" id="settings-ldap-bind" value="cn=admin,dc=company,dc=local" readonly>
+                                    </div>
+                                    <div class="col-12 col-md-6">
+                                        <label for="settings-ldap-filter" class="form-label small text-muted">LDAP User Matching Search Filter</label>
+                                        <input type="text" class="form-control form-control-sm" id="settings-ldap-filter" value="(uid={0})" readonly>
+                                    </div>
+                                </div>
+
+                                <h5 class="border-bottom pb-2 mb-3 text-secondary" style="font-size: 1rem;"><i class="fa-solid fa-server me-2"></i>Spool Spooler & Database Configuration</h5>
+                                <div class="row g-3 mb-4">
+                                    <div class="col-12 col-md-6">
+                                        <label for="settings-spool-dir" class="form-label small text-muted">Physical System Spool Directory</label>
+                                        <input type="text" class="form-control form-control-sm" id="settings-spool-dir" value="/var/spool/print-quota" required>
+                                    </div>
+                                    <div class="col-12 col-md-6">
+                                        <label for="settings-retention" class="form-label small text-muted">Audit Log Retention Policy (Days)</label>
+                                        <input type="number" class="form-control form-control-sm" id="settings-retention" value="90" min="1" max="365" required>
+                                    </div>
+                                </div>
+
+                                <h5 class="border-bottom pb-2 mb-3 text-secondary" style="font-size: 1rem;"><i class="fa-solid fa-envelope-open me-2"></i>SMTP Reporting Server Configuration</h5>
+                                <div class="row g-3 mb-4">
+                                    <div class="col-12 col-md-6">
+                                        <label for="settings-smtp-host" class="form-label small text-muted">Outgoing SMTP Server Hostname</label>
+                                        <input type="text" class="form-control form-control-sm" id="settings-smtp-host" value="smtp.carzonrent.com">
+                                    </div>
+                                    <div class="col-6 col-md-3">
+                                        <label for="settings-smtp-port" class="form-label small text-muted">SMTP Connection Port</label>
+                                        <input type="number" class="form-control form-control-sm" id="settings-smtp-port" value="25">
+                                    </div>
+                                    <div class="col-6 col-md-3">
+                                        <div class="form-check mt-4">
+                                            <input class="form-check-input" type="checkbox" id="settings-smtp-ssl" checked>
+                                            <label class="form-check-label small" for="settings-smtp-ssl">Use TLS Security</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex justify-content-end gap-2 border-top pt-3">
+                                    <button type="reset" class="btn btn-sm btn-outline-secondary">Discard Changes</button>
+                                    <button type="button" class="btn btn-sm btn-primary" id="btn-save-settings">Save System Configuration</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- 12. Health -->
+                <section id="view-health" class="content-view d-none">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <div class="card shadow-sm">
+                                <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
+                                    <span class="fw-semibold">Actuator System Health Panel</span>
+                                    <span class="badge bg-success" id="health-overall-badge">SYSTEM HEALTHY</span>
+                                </div>
+                                <div class="card-body p-0">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover table-striped mb-0 text-nowrap">
+                                            <thead>
+                                                <tr>
+                                                    <th>Health Check Component</th>
+                                                    <th>Operational Status</th>
+                                                    <th>Telemetry Details</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td>Liveness Probe</td>
+                                                    <td><span class="badge bg-success text-uppercase"><i class="fa-solid fa-check-circle"></i> Live</span></td>
+                                                    <td class="text-muted small">Application core responds successfully on thread loop.</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Readiness Probe</td>
+                                                    <td><span class="badge bg-success text-uppercase"><i class="fa-solid fa-check-circle"></i> Ready</span></td>
+                                                    <td class="text-muted small">All required backend resources are available for requests.</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>PostgreSQL Database</td>
+                                                    <td><span class="badge bg-success text-uppercase"><i class="fa-solid fa-check-circle"></i> UP</span></td>
+                                                    <td class="text-muted small" id="health-db-detail">Hikari Connection Pool healthy, active latency 4ms.</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>LDAP Active Directory</td>
+                                                    <td><span class="badge bg-success text-uppercase"><i class="fa-solid fa-check-circle"></i> UP</span></td>
+                                                    <td class="text-muted small">Connected to Domain Controller ldap://localhost:389.</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Disk Space Allocation</td>
+                                                    <td><span class="badge bg-success text-uppercase"><i class="fa-solid fa-check-circle"></i> UP</span></td>
+                                                    <td class="text-muted small" id="health-disk-detail">142.5 GB Free of 250 GB (57% available).</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>System Memory Allocation</td>
+                                                    <td><span class="badge bg-success text-uppercase"><i class="fa-solid fa-check-circle"></i> UP</span></td>
+                                                    <td class="text-muted small" id="health-mem-detail">JVM heap usage is at 32% of maximum limit.</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Printer Port Connectivity</td>
+                                                    <td><span class="badge bg-warning text-dark text-uppercase"><i class="fa-solid fa-triangle-exclamation"></i> DEGRADED</span></td>
+                                                    <td class="text-muted small">2 of 3 physical logical endpoints reachable. Printer-HR warns low toner.</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- 13. About -->
+                <section id="view-about" class="content-view d-none">
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header bg-white py-2 fw-semibold">Carzonrent PrintKeep System Attributes</div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-12 col-md-6 border-end">
+                                    <h5 class="text-secondary small fw-bold text-uppercase mb-3">Target Operating Topology</h5>
+                                    <ul class="list-group list-group-flush mb-0 small">
+                                        <li class="list-group-item d-flex justify-content-between px-0">
+                                            <span class="text-muted">OS Runtime Environment:</span>
+                                            <span class="fw-semibold" th:text="${os}">CentOS Stream 9 (x86_64)</span>
+                                        </li>
+                                        <li class="list-group-item d-flex justify-content-between px-0">
+                                            <span class="text-muted">Reverse Proxy:</span>
+                                            <span class="fw-semibold" th:text="${apacheStatus}">Apache HTTPd/2.4.57 (Port 80)</span>
+                                        </li>
+                                        <li class="list-group-item d-flex justify-content-between px-0">
+                                            <span class="text-muted">Routing Status:</span>
+                                            <span class="fw-semibold" th:text="${reverseProxyStatus}">ACTIVE (ProxyPass via Port 80)</span>
+                                        </li>
+                                        <li class="list-group-item d-flex justify-content-between px-0">
+                                            <span class="text-muted">Deployment State:</span>
+                                            <span class="fw-semibold" th:text="${deploymentStatus}">HEALTHY</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <h5 class="text-secondary small fw-bold text-uppercase mb-3">Application Core Specifications</h5>
+                                    <ul class="list-group list-group-flush mb-0 small">
+                                        <li class="list-group-item d-flex justify-content-between px-0">
+                                            <span class="text-muted">Spring Boot Platform:</span>
+                                            <span class="fw-semibold">v<span th:text="${springBootVersion}">3.3.0</span></span>
+                                        </li>
+                                        <li class="list-group-item d-flex justify-content-between px-0">
+                                            <span class="text-muted">Java Virtual Machine:</span>
+                                            <span class="fw-semibold" th:text="${javaVersion}">Java 21 OpenJDK</span>
+                                        </li>
+                                        <li class="list-group-item d-flex justify-content-between px-0">
+                                            <span class="text-muted">System Hostname:</span>
+                                            <span class="fw-semibold" th:text="${hostname}">qa.carzonrent</span>
+                                        </li>
+                                        <li class="list-group-item d-flex justify-content-between px-0">
+                                            <span class="text-muted">Deployment Phase:</span>
+                                            <span class="fw-semibold">Phase 2 Staging Gateway</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                
+            </main>
         </div>
-
-        <!-- System Services Status -->
-        <div class="services-section">
-            <h2>System Services</h2>
-            <div class="services-grid">
-                <!-- Service: Apache -->
-                <div class="service-status-card">
-                    <div class="service-header">
-                        <h3>Apache HTTP Server</h3>
-                        <span class="status-indicator-dot" th:classappend="${apacheStatusClass}"></span>
-                    </div>
-                    <div class="service-body">
-                        <div class="data-row">
-                            <span class="data-label">External Port:</span>
-                            <span class="data-value highlight">80</span>
-                        </div>
-                        <div class="data-row">
-                            <span class="data-label">Role:</span>
-                            <span class="data-value">Reverse Proxy / Gateway</span>
-                        </div>
-                        <div class="data-row">
-                            <span class="data-label">Status:</span>
-                            <span class="data-value status-badge" th:classappend="${apacheStatusClass}" th:text="${apacheStatus}">RUNNING</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Service: Reverse Proxy -->
-                <div class="service-status-card">
-                    <div class="service-header">
-                        <h3>Proxy Routing</h3>
-                        <span class="status-indicator-dot" th:classappend="${reverseProxyClass}"></span>
-                    </div>
-                    <div class="service-body">
-                        <div class="data-row">
-                            <span class="data-label">Directive:</span>
-                            <span class="data-value">ProxyPass / -> 127.0.0.1:8085</span>
-                        </div>
-                        <div class="data-row">
-                            <span class="data-label">Gateway:</span>
-                            <span class="data-value highlight" th:text="${reverseProxyStatus}">ACTIVE</span>
-                        </div>
-                        <div class="data-row">
-                            <span class="data-label">SSL Engine:</span>
-                            <span class="data-value">On (Passthrough)</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Service: Deployment Status -->
-                <div class="service-status-card">
-                    <div class="service-header">
-                        <h3>Deployment Health</h3>
-                        <span class="status-indicator-dot" th:classappend="${deploymentClass}"></span>
-                    </div>
-                    <div class="service-body">
-                        <div class="data-row">
-                            <span class="data-label">Topology:</span>
-                            <span class="data-value">Co-located Single Container</span>
-                        </div>
-                        <div class="data-row">
-                            <span class="data-label">Health Probe:</span>
-                            <span class="data-value highlight">Docker HEALTHCHECK Active</span>
-                        </div>
-                        <div class="data-row">
-                            <span class="data-label">Status:</span>
-                            <span class="data-value status-badge" th:classappend="${deploymentClass}" th:text="${deploymentStatus}">HEALTHY</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
+        
         <!-- Footer -->
-        <footer class="footer">
-            <p>&copy; 2026 Carzonrent India Private Limited. All rights reserved. Authorized access only.</p>
+        <footer class="app-footer">
+            <div class="container-fluid px-3 d-flex justify-content-between align-items-center">
+                <span>&copy; 2026 Carzonrent India Private Limited. All rights reserved. Authorized IT Access Only.</span>
+                <span class="font-monospace text-muted small" style="font-size: 0.75rem;">Build v1.0.0 (SHA-984A2)</span>
+            </div>
         </footer>
     </div>
 </body>
