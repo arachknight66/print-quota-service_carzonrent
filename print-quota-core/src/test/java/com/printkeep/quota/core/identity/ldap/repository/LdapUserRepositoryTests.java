@@ -49,4 +49,11 @@ class LdapUserRepositoryTests extends AbstractIntegrationTest {
         assertThat(result).isPresent();
         assertThat(result.get().enabled()).isFalse();
     }
+
+    @Test
+    void testEscapeLdapSearchValueEscapesFilterMetacharacters() {
+        final String escaped = LdapUserRepository.escapeLdapSearchValue("a*b(c)d\\e\u0000");
+
+        assertThat(escaped).isEqualTo("a\\2ab\\28c\\29d\\5ce\\00");
+    }
 }

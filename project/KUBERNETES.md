@@ -70,6 +70,23 @@ project/helm/carzonrent-qa/
     NOTES.txt
 ```
 
+## Plain Manifest Structure
+
+Use `project/kubernetes` when the QA environment should deploy with `kubectl` and without Helm:
+
+```text
+project/kubernetes/
+  namespace.yaml
+  configmap.yaml
+  secret.yaml
+  deployment.yaml
+  service.yaml
+  ingress.yaml
+  kustomization.yaml
+```
+
+These manifests keep the same image (`carzonrent-qa:latest`), Apache entry point, loopback Spring Boot backend, readiness/liveness probes, rolling update strategy, and resource requests/limits. A PVC is intentionally not included because this QA dashboard is stateless and writes runtime logs to container/stdout paths.
+
 ## Resource Rationale
 
 - `Namespace`: isolates QA platform objects.
@@ -197,6 +214,36 @@ Kubernetes-native rollback:
 ```powershell
 kubectl -n carzonrent-qa rollout undo deployment/qa-carzonrent-qa
 ```
+
+## Kubectl Usage
+
+Render the plain manifests:
+
+```powershell
+kubectl kustomize .\project\kubernetes
+```
+
+Deploy or update:
+
+```powershell
+kubectl apply -k .\project\kubernetes
+kubectl -n carzonrent-qa rollout status deployment/carzonrent-qa --timeout=120s
+```
+
+Rollback:
+
+```powershell
+kubectl -n carzonrent-qa rollout undo deployment/carzonrent-qa
+```
+
+Verify routing:
+
+```powershell
+kubectl -n carzonrent-qa get pods,svc,ingress
+kubectl -n carzonrent-qa exec deploy/carzonrent-qa -- curl -sS http://127.0.0.1:8080/health/readiness
+```
+
+Point `qa.carzonrent.com` at the ingress controller address in DNS or the QA hosts file. Kubernetes container names cannot contain dots, so the manifest uses the valid Kubernetes container name `qa-carzonrent` and preserves the required application identity as `CONTAINER_NAME=qa.carzonrent`.
 
 ## Verification
 

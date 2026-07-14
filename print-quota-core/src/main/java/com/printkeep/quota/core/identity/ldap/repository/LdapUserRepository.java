@@ -108,19 +108,40 @@ public class LdapUserRepository {
      */
     public List<LdapUserDto> search(final String queryText) {
         try {
+            final String escapedQueryText = escapeLdapSearchValue(queryText);
             return ldapTemplate.search(
                     LdapQueryBuilder.query()
                             .base(properties.getSearchBase())
                             .where("objectClass").is("user")
                             .and(LdapQueryBuilder.query()
-                                    .where("sAMAccountName").like("*" + queryText + "*")
-                                    .or("displayName").like("*" + queryText + "*")
-                                    .or("mail").like("*" + queryText + "*")),
+                                    .where("sAMAccountName").like("*" + escapedQueryText + "*")
+                                    .or("displayName").like("*" + escapedQueryText + "*")
+                                    .or("mail").like("*" + escapedQueryText + "*")),
                     getAttributesMapper()
             );
         } catch (final Exception e) {
             throw new LdapConnectionException("Failed to search users in LDAP with query: " + queryText, e);
         }
+    }
+
+    static String escapeLdapSearchValue(final String value) {
+        if (value == null || value.isEmpty()) {
+            return "";
+        }
+
+        final StringBuilder escaped = new StringBuilder(value.length());
+        for (int index = 0; index < value.length(); index++) {
+            final char current = value.charAt(index);
+            switch (current) {
+                case '\\' -> escaped.append("\\5c");
+                case '*' -> escaped.append("\\2a");
+                case '(' -> escaped.append("\\28");
+                case ')' -> escaped.append("\\29");
+                case '\u0000' -> escaped.append("\\00");
+                default -> escaped.append(current);
+            }
+        }
+        return escaped.toString();
     }
 
     private AttributesMapper<LdapUserDto> getAttributesMapper() {

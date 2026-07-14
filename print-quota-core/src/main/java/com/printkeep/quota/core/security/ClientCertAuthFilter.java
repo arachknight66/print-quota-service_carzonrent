@@ -10,6 +10,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import javax.naming.InvalidNameException;
 import javax.naming.ldap.LdapName;
 import javax.naming.ldap.Rdn;
+import javax.security.auth.x500.X500Principal;
 import java.io.IOException;
 import java.security.cert.CertificateExpiredException;
 import java.security.cert.CertificateNotYetValidException;
@@ -42,7 +43,7 @@ public class ClientCertAuthFilter implements Filter {
             clientCertificate.checkValidity();
             commonName = extractCommonName(clientCertificate);
         } catch (final CertificateExpiredException | CertificateNotYetValidException | InvalidNameException
-                       | RuntimeException e) {
+                       | IllegalArgumentException e) {
             reject(response);
             return;
         }
@@ -57,7 +58,8 @@ public class ClientCertAuthFilter implements Filter {
     }
 
     private static String extractCommonName(final X509Certificate certificate) throws InvalidNameException {
-        final LdapName ldapName = new LdapName(certificate.getSubjectX500Principal().getName());
+        final X500Principal subject = certificate.getSubjectX500Principal();
+        final LdapName ldapName = new LdapName(subject.getName());
         for (final Rdn rdn : ldapName.getRdns()) {
             if ("CN".equalsIgnoreCase(rdn.getType())) {
                 return rdn.getValue().toString();

@@ -1,0 +1,107 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: carzonrent-qa
+  namespace: carzonrent-qa
+  labels:
+    app.kubernetes.io/name: carzonrent-qa
+    app.kubernetes.io/part-of: printkeep
+spec:
+  replicas: 2
+  revisionHistoryLimit: 5
+  minReadySeconds: 10
+  progressDeadlineSeconds: 300
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: carzonrent-qa
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: carzonrent-qa
+        app.kubernetes.io/part-of: printkeep
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/prometheus"
+        prometheus.io/port: "8080"
+    spec:
+      hostname: qa-carzonrent
+      terminationGracePeriodSeconds: 45
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: qa-carzonrent
+          image: carzonrent-qa:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: carzonrent-qa-config
+            - secretRef:
+                name: carzonrent-qa-secret
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          startupProbe:
+            httpGet:
+              path: /health/liveness
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 24
+          readinessProbe:
+            httpGet:
+              path: /health/readiness
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health/liveness
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          volumeMounts:
+            - name: run-httpd
+              mountPath: /run/httpd
+            - name: tmp-dir
+              mountPath: /tmp
+            - name: log-httpd
+              mountPath: /var/log/httpd
+            - name: log-carzonrent
+              mountPath: /var/log/carzonrent
+      volumes:
+        - name: run-httpd
+          emptyDir: {}
+        - name: tmp-dir
+          emptyDir: {}
+        - name: log-httpd
+          emptyDir: {}
+        - name: log-carzonrent
+          emptyDir: {}

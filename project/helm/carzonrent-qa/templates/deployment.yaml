@@ -39,7 +39,7 @@ spec:
       securityContext:
         {{- toYaml .Values.securityContext.pod | nindent 8 }}
       containers:
-        - name: qa-dashboard
+        - name: qa-carzonrent
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:

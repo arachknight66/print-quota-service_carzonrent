@@ -208,11 +208,11 @@
         if (theme === 'dark') {
             els.body.classList.remove('light-mode');
             els.body.classList.add('dark-mode');
-            els.themeToggle.innerHTML = '<i class="fa-solid fa-sun text-warning"></i>';
+            replaceIcon(els.themeToggle, ['fa-solid', 'fa-sun', 'text-warning']);
         } else {
             els.body.classList.remove('dark-mode');
             els.body.classList.add('light-mode');
-            els.themeToggle.innerHTML = '<i class="fa-solid fa-moon"></i>';
+            replaceIcon(els.themeToggle, ['fa-solid', 'fa-moon']);
         }
     }
 
@@ -477,7 +477,7 @@
     // -------------------------------------------------------------
     async function loadPrintQueueView() {
         const queueTbody = document.getElementById('print-queue-tbody');
-        queueTbody.innerHTML = '';
+        clearElement(queueTbody);
         
         // Mock queue data
         const mockQueue = [
@@ -488,28 +488,27 @@
         document.getElementById('queue-count').textContent = `${mockQueue.length} Active Jobs`;
 
         if (!mockQueue.length) {
-            queueTbody.innerHTML = `<tr><td colspan="10" class="text-center text-muted py-4">No active print jobs in queue.</td></tr>`;
+            appendEmptyRow(queueTbody, 10, 'No active print jobs in queue.', 'text-center text-muted py-4');
             return;
         }
 
         mockQueue.forEach(job => {
             const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td class="fw-semibold">#${job.id}</td>
-                <td>${job.timestamp}</td>
-                <td class="font-monospace">${job.corrId}</td>
-                <td>${job.user}</td>
-                <td>${job.doc}</td>
-                <td><span class="badge bg-secondary-subtle">${job.printer}</span></td>
-                <td class="text-end fw-semibold">${job.pages}</td>
-                <td>${job.size}</td>
-                <td><span class="badge ${job.status === 'PRINTING' ? 'bg-primary' : 'bg-warning'}">${job.status}</span></td>
-                <td>
-                    <button class="btn btn-xs btn-outline-danger py-0 px-2 btn-cancel-job" data-id="${job.id}">
-                        <i class="fa-solid fa-circle-stop"></i> Terminate
-                    </button>
-                </td>
-            `;
+            appendTextCell(tr, `#${job.id}`, 'fw-semibold');
+            appendTextCell(tr, job.timestamp);
+            appendTextCell(tr, job.corrId, 'font-monospace');
+            appendTextCell(tr, job.user);
+            appendTextCell(tr, job.doc);
+            appendBadgeCell(tr, job.printer, 'bg-secondary-subtle');
+            appendTextCell(tr, job.pages, 'text-end fw-semibold');
+            appendTextCell(tr, job.size);
+            appendBadgeCell(tr, job.status, job.status === 'PRINTING' ? 'bg-primary' : 'bg-warning');
+            const actionCell = document.createElement('td');
+            const button = appendActionButton(actionCell, 'btn btn-xs btn-outline-danger py-0 px-2 btn-cancel-job', 'Terminate', {
+                id: job.id
+            });
+            prependIcon(button, ['fa-solid', 'fa-circle-stop']);
+            tr.appendChild(actionCell);
             queueTbody.appendChild(tr);
         });
 
@@ -528,17 +527,94 @@
     // -------------------------------------------------------------
     // Users View
     // -------------------------------------------------------------
+    function appendTextCell(row, text, className = '') {
+        const cell = document.createElement('td');
+        if (className) cell.className = className;
+        cell.textContent = text == null ? '' : String(text);
+        row.appendChild(cell);
+        return cell;
+    }
+
+    function appendBadgeCell(row, text, badgeClass = 'bg-secondary-subtle') {
+        const cell = document.createElement('td');
+        const badge = document.createElement('span');
+        badge.className = `badge ${badgeClass}`;
+        badge.textContent = text == null ? '' : String(text);
+        cell.appendChild(badge);
+        row.appendChild(cell);
+        return cell;
+    }
+
+    function appendActionButton(cell, className, text, dataAttributes = {}) {
+        const button = document.createElement('button');
+        button.className = className;
+        button.type = 'button';
+        Object.entries(dataAttributes).forEach(([key, value]) => {
+            button.setAttribute(`data-${key}`, value == null ? '' : String(value));
+        });
+        button.textContent = text;
+        cell.appendChild(button);
+        return button;
+    }
+
+    function clearElement(element) {
+        element.replaceChildren();
+    }
+
+    function appendEmptyRow(tbody, colspan, message, className = 'text-center py-4 text-muted') {
+        const row = document.createElement('tr');
+        const cell = document.createElement('td');
+        cell.colSpan = colspan;
+        cell.className = className;
+        cell.textContent = message;
+        row.appendChild(cell);
+        tbody.appendChild(row);
+    }
+
+    function createIcon(classes) {
+        const icon = document.createElement('i');
+        icon.className = classes.join(' ');
+        icon.setAttribute('aria-hidden', 'true');
+        return icon;
+    }
+
+    function replaceIcon(container, classes) {
+        container.replaceChildren(createIcon(classes));
+    }
+
+    function prependIcon(button, classes) {
+        const icon = createIcon(classes);
+        button.prepend(document.createTextNode(' '));
+        button.prepend(icon);
+    }
+
+    function bindOnce(elementId, eventName, handler) {
+        const element = document.getElementById(elementId);
+        const marker = `bound${eventName}`;
+        if (element.dataset[marker] === 'true') {
+            return;
+        }
+        element.addEventListener(eventName, handler);
+        element.dataset[marker] = 'true';
+    }
+
     async function loadUsersView() {
-        const url = `/api/v1/admin/users?page=${state.usersParams.page}&size=${state.usersParams.size}&username=${state.usersParams.search}&department=${state.usersParams.department}`;
+        const params = new URLSearchParams({
+            page: state.usersParams.page,
+            size: state.usersParams.size,
+            username: state.usersParams.search,
+            department: state.usersParams.department
+        });
+        const url = `/api/v1/admin/users?${params.toString()}`;
         const data = await apiRequest(url);
         state.users = data.content;
 
         // Render Users
         const tbody = document.getElementById('users-tbody');
-        tbody.innerHTML = '';
+        clearElement(tbody);
 
         if (!data.content || !data.content.length) {
-            tbody.innerHTML = `<tr><td colspan="10" class="text-center text-muted py-4">No user records matched query parameters.</td></tr>`;
+            appendEmptyRow(tbody, 10, 'No user records matched query parameters.', 'text-center text-muted py-4');
             return;
         }
 
@@ -563,22 +639,21 @@
             const cleanEmpId = `CZI-${100000 + index + state.usersParams.page * state.usersParams.size}`;
 
             const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td class="font-monospace text-muted">${cleanEmpId}</td>
-                <td class="fw-semibold">${user.domainUsername}</td>
-                <td>${user.department}</td>
-                <td class="text-end">${quota.allocatedPages}</td>
-                <td class="text-end">${quota.usedPages}</td>
-                <td class="text-end ${remainingClass}">${remaining}</td>
-                <td><span class="badge ${user.active ? 'bg-success-subtle' : 'bg-danger-subtle'}">${user.active ? 'ACTIVE' : 'DISABLED'}</span></td>
-                <td>${mockLogins[index % mockLogins.length]}</td>
-                <td><span class="badge bg-secondary-subtle">SYNCED</span></td>
-                <td>
-                    <button class="btn btn-xs btn-outline-secondary py-0 px-2 btn-user-adjust" data-id="${user.id}" data-username="${user.domainUsername}">
-                        <i class="fa-solid fa-edit"></i> Edit Quota
-                    </button>
-                </td>
-            `;
+            appendTextCell(tr, cleanEmpId, 'font-monospace text-muted');
+            appendTextCell(tr, user.domainUsername, 'fw-semibold');
+            appendTextCell(tr, user.department);
+            appendTextCell(tr, quota.allocatedPages, 'text-end');
+            appendTextCell(tr, quota.usedPages, 'text-end');
+            appendTextCell(tr, remaining, `text-end ${remainingClass}`);
+            appendBadgeCell(tr, user.active ? 'ACTIVE' : 'DISABLED', user.active ? 'bg-success-subtle' : 'bg-danger-subtle');
+            appendTextCell(tr, mockLogins[index % mockLogins.length]);
+            appendBadgeCell(tr, 'SYNCED', 'bg-secondary-subtle');
+            const actionCell = document.createElement('td');
+            appendActionButton(actionCell, 'btn btn-xs btn-outline-secondary py-0 px-2 btn-user-adjust', 'Edit Quota', {
+                id: user.id,
+                username: user.domainUsername
+            });
+            tr.appendChild(actionCell);
             tbody.appendChild(tr);
         });
 
@@ -674,14 +749,19 @@
     // Quota Management View
     // -------------------------------------------------------------
     async function loadQuotaManagementView() {
-        const url = `/api/v1/admin/quotas?page=${state.quotaParams.page}&size=${state.quotaParams.size}&username=${state.quotaParams.search}`;
+        const params = new URLSearchParams({
+            page: state.quotaParams.page,
+            size: state.quotaParams.size,
+            username: state.quotaParams.search
+        });
+        const url = `/api/v1/admin/quotas?${params.toString()}`;
         const data = await apiRequest(url);
         
         const tbody = document.getElementById('quota-tbody');
-        tbody.innerHTML = '';
+        clearElement(tbody);
 
         if (!data.content || !data.content.length) {
-            tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-4">No quota details matches query.</td></tr>`;
+            appendEmptyRow(tbody, 6, 'No quota details matches query.', 'text-center text-muted py-4');
             return;
         }
 
@@ -690,20 +770,28 @@
             const remainingClass = remaining <= 10 ? 'text-danger fw-bold' : '';
 
             const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td class="fw-semibold">${quota.user.domainUsername}</td>
-                <td><span class="badge bg-secondary-subtle">${quota.user.department}</span></td>
-                <td class="fw-semibold">${quota.allocatedPages}</td>
-                <td>${quota.usedPages}</td>
-                <td class="${remainingClass}">${remaining}</td>
-                <td>
-                    <div class="btn-group btn-group-xs">
-                        <button class="btn btn-xs btn-outline-primary px-2 btn-quota-add50" data-id="${quota.user.id}" data-username="${quota.user.domainUsername}">+50 Pages</button>
-                        <button class="btn btn-xs btn-outline-danger px-2 btn-quota-sub50" data-id="${quota.user.id}" data-username="${quota.user.domainUsername}">-50 Pages</button>
-                        <button class="btn btn-xs btn-outline-secondary px-2 btn-quota-custom" data-id="${quota.user.id}" data-username="${quota.user.domainUsername}">Custom</button>
-                    </div>
-                </td>
-            `;
+            appendTextCell(tr, quota.user.domainUsername, 'fw-semibold');
+            appendBadgeCell(tr, quota.user.department, 'bg-secondary-subtle');
+            appendTextCell(tr, quota.allocatedPages, 'fw-semibold');
+            appendTextCell(tr, quota.usedPages);
+            appendTextCell(tr, remaining, remainingClass);
+            const actionCell = document.createElement('td');
+            const group = document.createElement('div');
+            group.className = 'btn-group btn-group-xs';
+            appendActionButton(group, 'btn btn-xs btn-outline-primary px-2 btn-quota-add50', '+50 Pages', {
+                id: quota.user.id,
+                username: quota.user.domainUsername
+            });
+            appendActionButton(group, 'btn btn-xs btn-outline-danger px-2 btn-quota-sub50', '-50 Pages', {
+                id: quota.user.id,
+                username: quota.user.domainUsername
+            });
+            appendActionButton(group, 'btn btn-xs btn-outline-secondary px-2 btn-quota-custom', 'Custom', {
+                id: quota.user.id,
+                username: quota.user.domainUsername
+            });
+            actionCell.appendChild(group);
+            tr.appendChild(actionCell);
             tbody.appendChild(tr);
         });
 
@@ -798,7 +886,7 @@
         });
 
         const tbody = document.getElementById('departments-tbody');
-        tbody.innerHTML = '';
+        clearElement(tbody);
 
         Object.keys(depts).forEach(deptName => {
             const d = depts[deptName];
@@ -807,26 +895,35 @@
             const barBg = pct > 80 ? 'bg-danger' : (pct > 50 ? 'bg-warning' : 'bg-success');
 
             const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td class="fw-semibold">${deptName}</td>
-                <td>${d.usersCount}</td>
-                <td class="fw-semibold">${d.allocated}</td>
-                <td>${d.used}</td>
-                <td>${remaining}</td>
-                <td style="width: 200px;">
-                    <div class="d-flex align-items-center gap-2">
-                        <div class="progress flex-grow-1" style="height: 10px;">
-                            <div class="progress-bar ${barBg}" role="progressbar" style="width: ${pct}%;"></div>
-                        </div>
-                        <span class="small font-monospace">${pct}%</span>
-                    </div>
-                </td>
-                <td>
-                    <button class="btn btn-xs btn-outline-secondary py-0 px-2 btn-dept-adjust" data-dept="${deptName}">
-                        <i class="fa-solid fa-sliders"></i> Default Limit
-                    </button>
-                </td>
-            `;
+            appendTextCell(tr, deptName, 'fw-semibold');
+            appendTextCell(tr, d.usersCount);
+            appendTextCell(tr, d.allocated, 'fw-semibold');
+            appendTextCell(tr, d.used);
+            appendTextCell(tr, remaining);
+            const progressCell = document.createElement('td');
+            progressCell.style.width = '200px';
+            const wrapper = document.createElement('div');
+            wrapper.className = 'd-flex align-items-center gap-2';
+            const progress = document.createElement('div');
+            progress.className = 'progress flex-grow-1';
+            progress.style.height = '10px';
+            const progressBar = document.createElement('div');
+            progressBar.className = `progress-bar ${barBg}`;
+            progressBar.setAttribute('role', 'progressbar');
+            progressBar.style.width = `${pct}%`;
+            progress.appendChild(progressBar);
+            const pctLabel = document.createElement('span');
+            pctLabel.className = 'small font-monospace';
+            pctLabel.textContent = `${pct}%`;
+            wrapper.appendChild(progress);
+            wrapper.appendChild(pctLabel);
+            progressCell.appendChild(wrapper);
+            tr.appendChild(progressCell);
+            const actionCell = document.createElement('td');
+            appendActionButton(actionCell, 'btn btn-xs btn-outline-secondary py-0 px-2 btn-dept-adjust', 'Default Limit', {
+                dept: deptName
+            });
+            tr.appendChild(actionCell);
             tbody.appendChild(tr);
         });
 
@@ -846,7 +943,7 @@
         state.printers = printers;
 
         const grid = document.getElementById('printers-grid');
-        grid.innerHTML = '';
+        clearElement(grid);
 
         printers.forEach(p => {
             const col = document.createElement('div');
@@ -856,53 +953,88 @@
             const tonerBg = p.tonerLevel < 20 ? 'bg-danger' : (p.tonerLevel < 50 ? 'bg-warning' : 'bg-success');
             const paperBg = p.paperLevel < 20 ? 'bg-danger' : (p.paperLevel < 50 ? 'bg-warning' : 'bg-success');
 
-            col.innerHTML = `
-                <div class="printer-card">
-                    <div class="printer-status-bar ${p.status}"></div>
-                    <div class="p-3">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="fw-bold font-monospace text-primary" style="font-size: 1rem;">${p.name}</span>
-                            <span class="badge ${badgeBg}">${p.status}</span>
-                        </div>
-                        <p class="small text-muted mb-2"><i class="fa-solid fa-map-location-dot me-1"></i> ${p.location}</p>
-                        
-                        <div class="border-top pt-2 mb-3">
-                            <div class="d-flex justify-content-between small text-secondary mb-1">
-                                <span>Toner Level:</span>
-                                <span class="fw-semibold">${p.tonerLevel}%</span>
-                            </div>
-                            <div class="progress mb-2" style="height: 6px;">
-                                <div class="progress-bar ${tonerBg}" role="progressbar" style="width: ${p.tonerLevel}%;"></div>
-                            </div>
-                            
-                            <div class="d-flex justify-content-between small text-secondary mb-1">
-                                <span>Paper Trays:</span>
-                                <span class="fw-semibold">${p.paperLevel}%</span>
-                            </div>
-                            <div class="progress mb-2" style="height: 6px;">
-                                <div class="progress-bar ${paperBg}" role="progressbar" style="width: ${p.paperLevel}%;"></div>
-                            </div>
-                        </div>
-                        
-                        <div class="border-top pt-2" style="font-size: 0.8rem;">
-                            <div class="d-flex justify-content-between text-secondary py-1">
-                                <span>Queue Size:</span>
-                                <span class="fw-semibold text-dark">${p.queueSize} jobs</span>
-                            </div>
-                            <div class="d-flex justify-content-between text-secondary py-1">
-                                <span>Response Time:</span>
-                                <span class="fw-semibold text-dark">${p.averageResponse}</span>
-                            </div>
-                            <div class="d-flex justify-content-between text-secondary py-1">
-                                <span>IPP URI:</span>
-                                <span class="font-monospace fw-bold text-truncate ms-2" style="max-width: 150px;" title="${p.ippEndpoint}">${p.ippEndpoint}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
+            const card = document.createElement('div');
+            card.className = 'printer-card';
+            const statusBar = document.createElement('div');
+            statusBar.className = `printer-status-bar ${p.status}`;
+            const body = document.createElement('div');
+            body.className = 'p-3';
+            const header = document.createElement('div');
+            header.className = 'd-flex justify-content-between align-items-center mb-2';
+            const name = document.createElement('span');
+            name.className = 'fw-bold font-monospace text-primary';
+            name.style.fontSize = '1rem';
+            name.textContent = p.name;
+            const status = document.createElement('span');
+            status.className = `badge ${badgeBg}`;
+            status.textContent = p.status;
+            header.appendChild(name);
+            header.appendChild(status);
+            const location = document.createElement('p');
+            location.className = 'small text-muted mb-2';
+            location.textContent = p.location;
+            const meters = document.createElement('div');
+            meters.className = 'border-top pt-2 mb-3';
+            meters.appendChild(createPrinterMeter('Toner Level:', p.tonerLevel, tonerBg));
+            meters.appendChild(createPrinterMeter('Paper Trays:', p.paperLevel, paperBg));
+            const details = document.createElement('div');
+            details.className = 'border-top pt-2';
+            details.style.fontSize = '0.8rem';
+            details.appendChild(createPrinterDetail('Queue Size:', `${p.queueSize} jobs`));
+            details.appendChild(createPrinterDetail('Response Time:', p.averageResponse));
+            details.appendChild(createPrinterDetail('IPP URI:', p.ippEndpoint, true));
+            body.appendChild(header);
+            body.appendChild(location);
+            body.appendChild(meters);
+            body.appendChild(details);
+            card.appendChild(statusBar);
+            card.appendChild(body);
+            col.appendChild(card);
             grid.appendChild(col);
         });
+    }
+
+    function createPrinterMeter(label, value, progressClass) {
+        const container = document.createElement('div');
+        const row = document.createElement('div');
+        row.className = 'd-flex justify-content-between small text-secondary mb-1';
+        const labelSpan = document.createElement('span');
+        labelSpan.textContent = label;
+        const valueSpan = document.createElement('span');
+        valueSpan.className = 'fw-semibold';
+        valueSpan.textContent = `${value}%`;
+        row.appendChild(labelSpan);
+        row.appendChild(valueSpan);
+        const progress = document.createElement('div');
+        progress.className = 'progress mb-2';
+        progress.style.height = '6px';
+        const progressBar = document.createElement('div');
+        progressBar.className = `progress-bar ${progressClass}`;
+        progressBar.setAttribute('role', 'progressbar');
+        progressBar.style.width = `${value}%`;
+        progress.appendChild(progressBar);
+        container.appendChild(row);
+        container.appendChild(progress);
+        return container;
+    }
+
+    function createPrinterDetail(label, value, truncate = false) {
+        const row = document.createElement('div');
+        row.className = 'd-flex justify-content-between text-secondary py-1';
+        const labelSpan = document.createElement('span');
+        labelSpan.textContent = label;
+        const valueSpan = document.createElement('span');
+        valueSpan.className = truncate
+            ? 'font-monospace fw-bold text-truncate ms-2'
+            : 'fw-semibold text-dark';
+        if (truncate) {
+            valueSpan.style.maxWidth = '150px';
+            valueSpan.title = value == null ? '' : String(value);
+        }
+        valueSpan.textContent = value == null ? '' : String(value);
+        row.appendChild(labelSpan);
+        row.appendChild(valueSpan);
+        return row;
     }
 
     // -------------------------------------------------------------
@@ -928,13 +1060,13 @@
         });
         
         // Setup report button endpoints
-        document.getElementById('btn-report-download-csv').onclick = () => {
+        bindOnce('btn-report-download-csv', 'click', () => {
             window.open('/api/v1/admin/reports/export/logs?format=csv', '_blank');
-        };
-        
-        document.getElementById('btn-report-download-excel').onclick = () => {
+        });
+
+        bindOnce('btn-report-download-excel', 'click', () => {
             window.open('/api/v1/admin/reports/export/logs?format=excel', '_blank');
-        };
+        });
     }
 
     // Report preview action
@@ -944,29 +1076,28 @@
             const range = document.getElementById('report-range').value;
             const dept = document.getElementById('report-dept').value;
             
-            let url = `/api/v1/admin/history?size=8`;
-            if (dept) url += `&department=${dept}`;
+            const params = new URLSearchParams({ size: 8 });
+            if (dept) params.set('department', dept);
+            const url = `/api/v1/admin/history?${params.toString()}`;
             
             const logsData = await apiRequest(url);
             
             const tbody = document.getElementById('report-preview-tbody');
-            tbody.innerHTML = '';
+            clearElement(tbody);
 
             if (!logsData.content || !logsData.content.length) {
-                tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4">No transactions recorded for the range.</td></tr>`;
+                appendEmptyRow(tbody, 7, 'No transactions recorded for the range.', 'text-center py-4');
             } else {
                 logsData.content.forEach(log => {
                     const statusClass = log.status === 'SUCCESS' ? 'bg-success-subtle' : 'bg-danger-subtle';
                     const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td>${formatTimestamp(log.timestamp)}</td>
-                        <td>${log.user.domainUsername}</td>
-                        <td>${log.user.department}</td>
-                        <td>${log.printerName}</td>
-                        <td>${log.documentName}</td>
-                        <td class="text-end fw-semibold">${log.pageCount}</td>
-                        <td><span class="badge ${statusClass}">${log.status}</span></td>
-                    `;
+                    appendTextCell(tr, formatTimestamp(log.timestamp));
+                    appendTextCell(tr, log.user.domainUsername);
+                    appendTextCell(tr, log.user.department);
+                    appendTextCell(tr, log.printerName);
+                    appendTextCell(tr, log.documentName);
+                    appendTextCell(tr, log.pageCount, 'text-end fw-semibold');
+                    appendBadgeCell(tr, log.status, statusClass);
                     tbody.appendChild(tr);
                 });
             }
@@ -993,23 +1124,22 @@
         state.scheduledJobs = jobs;
 
         const tbody = document.getElementById('scheduled-jobs-tbody');
-        tbody.innerHTML = '';
+        clearElement(tbody);
 
         jobs.forEach(job => {
             const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td class="fw-bold">${job.name}</td>
-                <td class="text-wrap small" style="max-width: 250px;">${job.description}</td>
-                <td class="font-monospace text-secondary">${job.cronExpression}</td>
-                <td>${job.lastDuration}</td>
-                <td><span class="badge bg-success-subtle text-uppercase"><i class="fa-solid fa-check"></i> ${job.lastStatus}</span></td>
-                <td class="font-monospace small text-primary">${job.nextExecution}</td>
-                <td>
-                    <button class="btn btn-xs btn-outline-secondary py-0 px-2 btn-trigger-job" data-name="${job.name}">
-                        <i class="fa-solid fa-play"></i> Trigger Now
-                    </button>
-                </td>
-            `;
+            appendTextCell(tr, job.name, 'fw-bold');
+            const descCell = appendTextCell(tr, job.description, 'text-wrap small');
+            descCell.style.maxWidth = '250px';
+            appendTextCell(tr, job.cronExpression, 'font-monospace text-secondary');
+            appendTextCell(tr, job.lastDuration);
+            appendBadgeCell(tr, job.lastStatus, 'bg-success-subtle text-uppercase');
+            appendTextCell(tr, job.nextExecution, 'font-monospace small text-primary');
+            const actionCell = document.createElement('td');
+            appendActionButton(actionCell, 'btn btn-xs btn-outline-secondary py-0 px-2 btn-trigger-job', 'Trigger Now', {
+                name: job.name
+            });
+            tr.appendChild(actionCell);
             tbody.appendChild(tr);
         });
 
@@ -1084,51 +1214,44 @@
 
         // HTTP Inbound request log table mock
         const httpTbody = document.getElementById('metrics-http-tbody');
-        httpTbody.innerHTML = `
-            <tr>
-                <td class="font-monospace fw-semibold">/api/v1/admin/dashboard</td>
-                <td><span class="badge bg-secondary">GET</span></td>
-                <td class="fw-semibold">1,248 invocations</td>
-                <td>12ms</td>
-                <td><span class="badge bg-success-subtle">NORMAL</span></td>
-            </tr>
-            <tr>
-                <td class="font-monospace fw-semibold">/printers/{printerName}</td>
-                <td><span class="badge bg-primary">POST</span></td>
-                <td class="fw-semibold">452 invocations</td>
-                <td>82ms</td>
-                <td><span class="badge bg-success-subtle">NORMAL</span></td>
-            </tr>
-            <tr>
-                <td class="font-monospace fw-semibold">/api/v1/admin/users</td>
-                <td><span class="badge bg-secondary">GET</span></td>
-                <td class="fw-semibold">154 invocations</td>
-                <td>24ms</td>
-                <td><span class="badge bg-success-subtle">NORMAL</span></td>
-            </tr>
-            <tr>
-                <td class="font-monospace fw-semibold">/api/v1/admin/sync</td>
-                <td><span class="badge bg-primary">POST</span></td>
-                <td class="fw-semibold">12 invocations</td>
-                <td>1.4s</td>
-                <td><span class="badge bg-warning-subtle text-dark">SLOW</span></td>
-            </tr>
-        `;
+        clearElement(httpTbody);
+        [
+            ['/api/v1/admin/dashboard', 'GET', '1,248 invocations', '12ms', 'NORMAL', 'bg-secondary', 'bg-success-subtle'],
+            ['/printers/{printerName}', 'POST', '452 invocations', '82ms', 'NORMAL', 'bg-primary', 'bg-success-subtle'],
+            ['/api/v1/admin/users', 'GET', '154 invocations', '24ms', 'NORMAL', 'bg-secondary', 'bg-success-subtle'],
+            ['/api/v1/admin/sync', 'POST', '12 invocations', '1.4s', 'SLOW', 'bg-primary', 'bg-warning-subtle text-dark']
+        ].forEach(([endpoint, method, invocations, latency, status, methodClass, statusClass]) => {
+            const tr = document.createElement('tr');
+            appendTextCell(tr, endpoint, 'font-monospace fw-semibold');
+            appendBadgeCell(tr, method, methodClass);
+            appendTextCell(tr, invocations, 'fw-semibold');
+            appendTextCell(tr, latency);
+            appendBadgeCell(tr, status, statusClass);
+            httpTbody.appendChild(tr);
+        });
     }
 
     // -------------------------------------------------------------
     // Audit Logs View
     // -------------------------------------------------------------
     async function loadAuditLogsView() {
-        const url = `/api/v1/admin/history?page=${state.logsParams.page}&size=${state.logsParams.size}&username=${state.logsParams.search}&correlationId=${state.logsParams.correlationId}&status=${state.logsParams.status}&printer=${state.logsParams.printer}`;
+        const params = new URLSearchParams({
+            page: state.logsParams.page,
+            size: state.logsParams.size,
+            username: state.logsParams.search,
+            correlationId: state.logsParams.correlationId,
+            status: state.logsParams.status,
+            printer: state.logsParams.printer
+        });
+        const url = `/api/v1/admin/history?${params.toString()}`;
         const data = await apiRequest(url);
         state.printLogs = data.content;
 
         const tbody = document.getElementById('logs-tbody');
-        tbody.innerHTML = '';
+        clearElement(tbody);
 
         if (!data.content || !data.content.length) {
-            tbody.innerHTML = `<tr><td colspan="10" class="text-center py-4 text-muted">No audit logs found.</td></tr>`;
+            appendEmptyRow(tbody, 10, 'No audit logs found.');
             return;
         }
 
@@ -1136,7 +1259,7 @@
             const statusClass = log.status === 'SUCCESS' ? 'bg-success-subtle' : (log.status === 'REJECTED_QUOTA' ? 'bg-warning-subtle text-dark' : 'bg-danger-subtle');
             
             // Build dynamic mock IP and Request UUID to fit production table requirements
-            const mockIp = `192.168.12.${20 + (log.user.domainUsername.hashCode() % 80)}`;
+            const mockIp = `192.168.12.${20 + (hashCode(log.user.domainUsername) % 80)}`;
             const mockReqId = log.id.toString().substring(0, 8);
             
             // Derive mock quotas before and after for logging display
@@ -1144,18 +1267,16 @@
             const qAfter = log.status === 'SUCCESS' ? 15 : 5;
 
             const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td class="font-monospace">${formatTimestamp(log.timestamp)}</td>
-                <td class="font-monospace fw-bold text-primary">${log.correlationId}</td>
-                <td class="fw-semibold text-dark">${log.user.domainUsername}</td>
-                <td><span class="badge bg-secondary-subtle">${log.printerName}</span></td>
-                <td class="text-end fw-semibold text-dark">${log.pageCount}</td>
-                <td class="text-end text-muted">${qBefore}</td>
-                <td class="text-end text-muted">${qAfter}</td>
-                <td><span class="badge ${statusClass}">${log.status}</span></td>
-                <td class="font-monospace small">${mockIp}</td>
-                <td class="font-monospace small text-muted">${mockReqId}</td>
-            `;
+            appendTextCell(tr, formatTimestamp(log.timestamp), 'font-monospace');
+            appendTextCell(tr, log.correlationId, 'font-monospace fw-bold text-primary');
+            appendTextCell(tr, log.user.domainUsername, 'fw-semibold text-dark');
+            appendBadgeCell(tr, log.printerName, 'bg-secondary-subtle');
+            appendTextCell(tr, log.pageCount, 'text-end fw-semibold text-dark');
+            appendTextCell(tr, qBefore, 'text-end text-muted');
+            appendTextCell(tr, qAfter, 'text-end text-muted');
+            appendBadgeCell(tr, log.status, statusClass);
+            appendTextCell(tr, mockIp, 'font-monospace small');
+            appendTextCell(tr, mockReqId, 'font-monospace small text-muted');
             tbody.appendChild(tr);
         });
 
@@ -1220,18 +1341,18 @@
     });
 
     // Exports
-    document.getElementById('btn-export-logs-csv').onclick = () => {
+    document.getElementById('btn-export-logs-csv').addEventListener('click', () => {
         window.open('/api/v1/admin/reports/export/logs?format=csv', '_blank');
-    };
-    document.getElementById('btn-export-logs-excel').onclick = () => {
+    });
+    document.getElementById('btn-export-logs-excel').addEventListener('click', () => {
         window.open('/api/v1/admin/reports/export/logs?format=excel', '_blank');
-    };
-    document.getElementById('btn-export-users-csv').onclick = () => {
+    });
+    document.getElementById('btn-export-users-csv').addEventListener('click', () => {
         window.open('/api/v1/admin/reports/export/quotas?format=csv', '_blank');
-    };
-    document.getElementById('btn-export-users-excel').onclick = () => {
+    });
+    document.getElementById('btn-export-users-excel').addEventListener('click', () => {
         window.open('/api/v1/admin/reports/export/quotas?format=excel', '_blank');
-    };
+    });
 
     // -------------------------------------------------------------
     // Settings View
@@ -1276,16 +1397,16 @@
     // -------------------------------------------------------------
     function renderPagination(elId, data, params, callback) {
         const container = document.getElementById(elId);
-        container.innerHTML = '';
+        clearElement(container);
 
         if (data.totalPages <= 1) return;
 
         // Previous
         const prevLi = document.createElement('li');
         prevLi.className = `page-item ${data.first ? 'disabled' : ''}`;
-        prevLi.innerHTML = `<a class="page-link" href="javascript:void(0)" aria-label="Previous">&laquo;</a>`;
+        prevLi.appendChild(createPageLink('Previous', '\u00ab'));
         if (!data.first) {
-            prevLi.onclick = () => { params.page--; callback(); };
+            prevLi.addEventListener('click', () => { params.page--; callback(); });
         }
         container.appendChild(prevLi);
 
@@ -1293,19 +1414,29 @@
         for (let i = 0; i < data.totalPages; i++) {
             const li = document.createElement('li');
             li.className = `page-item ${i === data.number ? 'active' : ''}`;
-            li.innerHTML = `<a class="page-link" href="javascript:void(0)">${i + 1}</a>`;
-            li.onclick = () => { params.page = i; callback(); };
+            li.appendChild(createPageLink(`Page ${i + 1}`, String(i + 1)));
+            li.addEventListener('click', () => { params.page = i; callback(); });
             container.appendChild(li);
         }
 
         // Next
         const nextLi = document.createElement('li');
         nextLi.className = `page-item ${data.last ? 'disabled' : ''}`;
-        nextLi.innerHTML = `<a class="page-link" href="javascript:void(0)" aria-label="Next">&raquo;</a>`;
+        nextLi.appendChild(createPageLink('Next', '\u00bb'));
         if (!data.last) {
-            nextLi.onclick = () => { params.page++; callback(); };
+            nextLi.addEventListener('click', () => { params.page++; callback(); });
         }
         container.appendChild(nextLi);
+    }
+
+    function createPageLink(label, text) {
+        const link = document.createElement('a');
+        link.className = 'page-link';
+        link.href = '#';
+        link.setAttribute('aria-label', label);
+        link.textContent = text;
+        link.addEventListener('click', event => event.preventDefault());
+        return link;
     }
 
     function showToast(title, message, type = 'info') {
@@ -1379,15 +1510,15 @@
         return target;
     }
 
-    // Hashcode extension for simple hashes
-    String.prototype.hashCode = function() {
+    function hashCode(value) {
         let hash = 0;
-        for (let i = 0; i < this.length; i++) {
-            const char = this.charCodeAt(i);
+        const text = value == null ? '' : String(value);
+        for (let i = 0; i < text.length; i++) {
+            const char = text.charCodeAt(i);
             hash = (hash << 5) - hash + char;
             hash |= 0; // Convert to 32bit integer
         }
         return Math.abs(hash);
-    };
+    }
 
 })();

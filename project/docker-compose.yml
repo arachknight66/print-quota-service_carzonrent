@@ -1,5 +1,3 @@
-version: '3.9'
-
 services:
   print-quota-db:
     image: postgres:16-alpine
@@ -54,8 +52,9 @@ services:
     restart: unless-stopped
 
   qa-carzonrent:
-    image: printkeep-print-quota-app:latest
+    image: carzonrent-qa:latest
     container_name: qa.carzonrent
+    hostname: qa.carzonrent
     depends_on:
       print-quota-db:
         condition: service_healthy
@@ -68,15 +67,20 @@ services:
       SPRING_LDAP_URLS: ldap://print-quota-ldap:389/dc=carzonrent,dc=local
       SPRING_LDAP_USERNAME: cn=admin,dc=carzonrent,dc=local
       SPRING_LDAP_PASSWORD: ldap_admin_password
-      SPRING_PROFILES_ACTIVE: prod
+      SPRING_PROFILES_ACTIVE: qa
       JAVA_OPTS: "-XX:MaxRAMPercentage=70 -XX:+ExitOnOutOfMemoryError"
+      CONTAINER_NAME: qa.carzonrent
+      BUILD_VERSION: "2.0.0"
+      GIT_COMMIT_ID: "local-compose"
+      BUILD_TIMESTAMP: "local-compose"
+      DOCKER_IMAGE_TAG: "latest"
+      JENKINS_BUILD_NUMBER: "local-compose"
     ports:
       - "80:8080"
-      - "8085:8085"
     volumes:
       - ./app/config:/config:ro
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:8085/health/liveness"]
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/health/readiness >/dev/null && curl -fsS http://127.0.0.1:8085/health/liveness >/dev/null"]
       interval: 15s
       timeout: 5s
       retries: 3
