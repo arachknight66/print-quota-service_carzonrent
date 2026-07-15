@@ -19,7 +19,12 @@ spec:
     metadata:
       labels:
         app: print-quota-app
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "80"
+        prometheus.io/path: "/actuator/prometheus"
     spec:
+      serviceAccountName: print-quota-sa
       securityContext:
         runAsUser: 10001
         runAsGroup: 10001
@@ -27,11 +32,11 @@ spec:
         runAsNonRoot: true
       containers:
         - name: print-quota-app
-          image: print-quota-core:latest  # Replace with production registry image path
+          image: quay.io/centos/centos:stream9  # Replace with production registry image path
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: false  # Required for local temporary directory writes
+            readOnlyRootFilesystem: false  # Required for httpd runtime PID/lock files
             capabilities:
               drop:
                 - ALL
@@ -108,8 +113,8 @@ spec:
                   name: print-quota-config
                   key: COST_PER_PAGE
           ports:
-            - containerPort: 8080
-              name: app-port
+            - containerPort: 80
+              name: http-port
           resources:
             limits:
               cpu: "1.5"
@@ -117,18 +122,23 @@ spec:
             requests:
               cpu: "500m"
               memory: 1Gi
+          startupProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 80
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            failureThreshold: 30
           livenessProbe:
             httpGet:
               path: /actuator/health/liveness
-              port: 8080
-            initialDelaySeconds: 30
+              port: 80
             periodSeconds: 10
             timeoutSeconds: 3
           readinessProbe:
             httpGet:
               path: /actuator/health/readiness
-              port: 8080
-            initialDelaySeconds: 20
+              port: 80
             periodSeconds: 10
             timeoutSeconds: 3
           volumeMounts:
