@@ -38,15 +38,18 @@ cleanup() {
 }
 trap cleanup SIGTERM SIGINT
 
-# 3. Start Spring Boot in the background as printuser
-echo "[SPRING BOOT] Spawning backend instance on 127.0.0.1:8085 as printuser..."
-# Run as printuser, propagating env variables and Java runtime options
-runuser -u printuser -- java $JAVA_OPTS -jar /app/app.jar --spring.profiles.active=qa > /dev/stdout 2>&1 &
+# 3. Start Spring Boot in the background
+echo "[SPRING BOOT] Spawning backend instance on 127.0.0.1:8085..."
+if [ "$(id -u)" = "0" ]; then
+    runuser -u printuser -- java $JAVA_OPTS -jar /app/app.jar --spring.profiles.active="${SPRING_PROFILES_ACTIVE:-qa}" > /dev/stdout 2>&1 &
+else
+    java $JAVA_OPTS -jar /app/app.jar --spring.profiles.active="${SPRING_PROFILES_ACTIVE:-qa}" > /dev/stdout 2>&1 &
+fi
 SPRING_PID=$!
 
 # 4. Wait for Spring Boot backend to be fully responsive
 echo "[HEALTH CHECK] Waiting for backend to start reporting health state..."
-HEALTH_URL="http://127.0.0.1:8085/health"
+HEALTH_URL="http://127.0.0.1:8085/actuator/health/readiness"
 MAX_ATTEMPTS=45
 ATTEMPT=0
 SUCCESS=false
