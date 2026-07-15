@@ -125,7 +125,8 @@ public class PrintProcessingPipeline {
                 copies,
                 username,
                 printerName,
-                latencyMs
+                latencyMs,
+                context
         );
     }
 }

@@ -35,3 +35,6 @@ app:
     username: ${LDAP_BIND_DN:cn=admin,dc=company,dc=local}
     password: ${LDAP_BIND_PASSWORD:admin}
     search-base: ${LDAP_SEARCH_BASE:ou=users}
+  admin:
+    # Disable IP restriction in local development — developer machines are not in the allowed CIDR range.
+    ip-filter-enabled: false

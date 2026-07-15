@@ -1,6 +1,7 @@
 package com.printkeep.quota.core.admin.controller;
 
 import com.printkeep.quota.core.admin.service.ExcelExportService;
+import com.printkeep.quota.core.admin.service.ChargebackReportService;
 import com.printkeep.quota.core.model.PrintLog;
 import com.printkeep.quota.core.model.Quota;
 import com.printkeep.quota.core.repository.PrintLogRepository;
@@ -24,14 +25,17 @@ import java.util.stream.Stream;
 public class ReportController {
 
     private final ExcelExportService exportService;
+    private final ChargebackReportService chargebackReportService;
     private final PrintLogRepository printLogRepository;
     private final QuotaRepository quotaRepository;
 
     public ReportController(
             final ExcelExportService exportService,
+            final ChargebackReportService chargebackReportService,
             final PrintLogRepository printLogRepository,
             final QuotaRepository quotaRepository) {
         this.exportService = exportService;
+        this.chargebackReportService = chargebackReportService;
         this.printLogRepository = printLogRepository;
         this.quotaRepository = quotaRepository;
     }
@@ -75,5 +79,17 @@ public class ReportController {
                 exportService.exportQuotasToExcel(quotas, response.getOutputStream());
             }
         }
+    }
+
+    @GetMapping("/chargeback")
+    public void exportChargeback(
+            @RequestParam final String month,
+            final HttpServletResponse response) throws IOException {
+
+        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        response.setHeader("Content-Disposition", "attachment; filename=\"chargeback_report_"
+                + month + "_" + Instant.now().getEpochSecond() + ".xlsx\"");
+
+        chargebackReportService.exportChargebackToExcel(month, response.getOutputStream());
     }
 }

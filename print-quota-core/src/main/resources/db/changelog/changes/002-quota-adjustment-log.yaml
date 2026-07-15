@@ -1,0 +1,47 @@
+databaseChangeLog:
+  - changeSet:
+      id: 002-quota-adjustment-log
+      author: antigravity
+      changes:
+        - createTable:
+            tableName: quota_adjustment_logs
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: quota_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_adjustment_log_quota
+                    referencedTableName: quotas
+                    referencedColumnNames: id
+              - column:
+                  name: adjustment_amount
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: reason
+                  type: varchar(500)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: approved_by
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: timestamp
+                  type: timestamp
+                  constraints:
+                    nullable: false
+              - column:
+                  name: correlation_id
+                  type: varchar(50)
+                  constraints:
+                    nullable: true

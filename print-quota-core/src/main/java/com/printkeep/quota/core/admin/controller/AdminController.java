@@ -41,16 +41,19 @@ public class AdminController {
     private final QuotaRepository quotaRepository;
     private final PrintLogRepository printLogRepository;
     private final IdentitySynchronizationService syncService;
+    private final com.printkeep.quota.core.admin.service.AdminQuotaService adminQuotaService;
 
     public AdminController(
             final UserRepository userRepository,
             final QuotaRepository quotaRepository,
             final PrintLogRepository printLogRepository,
-            final IdentitySynchronizationService syncService) {
+            final IdentitySynchronizationService syncService,
+            final com.printkeep.quota.core.admin.service.AdminQuotaService adminQuotaService) {
         this.userRepository = userRepository;
         this.quotaRepository = quotaRepository;
         this.printLogRepository = printLogRepository;
         this.syncService = syncService;
+        this.adminQuotaService = adminQuotaService;
     }
 
     @GetMapping("/users")
@@ -72,24 +75,13 @@ public class AdminController {
     @PostMapping("/quotas/{userId}/adjust")
     public ResponseEntity<?> adjustQuota(
             @PathVariable final UUID userId,
-            @RequestBody final Map<String, Integer> body) {
-        final Integer adjustment = body.get("adjustment");
-        if (adjustment == null) {
-            return ResponseEntity.badRequest().body(Map.of("error", "adjustment parameter is required"));
+            @jakarta.validation.Valid @RequestBody final com.printkeep.quota.core.admin.dto.QuotaAdjustmentRequest request) {
+        try {
+            final Quota updated = adminQuotaService.adjustUserQuota(userId, request);
+            return ResponseEntity.ok(updated);
+        } catch (final IllegalArgumentException e) {
+            return ResponseEntity.status(404).body(Map.of("error", e.getMessage()));
         }
-
-        final String currentMonth = MONTH_FORMATTER.format(Instant.now());
-        final Optional<Quota> quotaOpt = quotaRepository.findByUserIdAndMonth(userId, currentMonth);
-
-        if (quotaOpt.isEmpty()) {
-            return ResponseEntity.status(404).body(Map.of("error", "No quota allocated for current month"));
-        }
-
-        final Quota quota = quotaOpt.get();
-        quota.setAllocatedPages(quota.getAllocatedPages() + adjustment);
-        quotaRepository.save(quota);
-
-        return ResponseEntity.ok(quota);
     }
 
     @PostMapping("/quotas/reset")
@@ -130,5 +122,27 @@ public class AdminController {
     public ResponseEntity<?> triggerManualLdapSync() {
         syncService.synchronizeIdentities();
         return ResponseEntity.ok(Map.of("status", "SUCCESS", "message", "Active Directory sync completed"));
+    }
+
+    /**
+     * Instantly deactivates a user's print quota eligibility, bypassing the hourly scheduler.
+     * Used for immediate processing of same-day terminations.
+     *
+     * @param userId UUID of the user to deactivate.
+     * @return 200 OK on success, or 404 if user not found.
+     */
+    @PostMapping("/users/{userId}/disable-immediate")
+    @org.springframework.transaction.annotation.Transactional(rollbackFor = Exception.class)
+    public ResponseEntity<?> disableUserImmediate(@PathVariable final UUID userId) {
+        final Optional<User> userOpt = userRepository.findById(userId);
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.status(404).body(Map.of("error", "User not found"));
+        }
+        
+        final User user = userOpt.get();
+        user.setActive(false);
+        userRepository.save(user);
+
+        return ResponseEntity.ok(Map.of("status", "SUCCESS", "message", "User has been deactivated immediately"));
     }
 }

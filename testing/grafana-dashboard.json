@@ -139,6 +139,51 @@
           "refId": "B"
         }
       ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 16
+      },
+      "id": 5,
+      "title": "Quota Refunds (Automatic) — 1m Rate",
+      "description": "Rate of automatic quota refunds issued when a print job was accepted and deducted but failed during physical printer forwarding. Any non-zero value requires investigation.",
+      "type": "timeseries",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "orange",
+            "mode": "fixed"
+          },
+          "custom": {
+            "fillOpacity": 20,
+            "lineWidth": 2
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 0.001 }
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "rate(quota_refunds_total[1m])",
+          "legendFormat": "Quota Refunds / sec",
+          "range": true,
+          "refId": "A"
+        }
+      ]
     }
   ],
   "refresh": "5s",
@@ -155,5 +200,5 @@
   "timepicker": {},
   "timezone": "browser",
   "title": "PrintKeep Operational Hardening Dashboard",
-  "version": 1
+  "version": 2
 }

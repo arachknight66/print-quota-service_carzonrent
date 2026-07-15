@@ -1,5 +1,6 @@
 server:
-  port: ${SERVER_PORT:443}
+  port: ${SERVER_PORT:8085}
+  address: ${SERVER_ADDRESS:127.0.0.1}
   ssl:
     key-store: ${KEYSTORE_PATH:classpath:keystore.p12}
     key-store-password: ${KEYSTORE_PASSWORD}
@@ -9,7 +10,7 @@ server:
     trust-store: ${TRUSTSTORE_PATH:classpath:truststore.p12}
     trust-store-password: ${TRUSTSTORE_PASSWORD}
     trust-store-type: ${TRUSTSTORE_TYPE:PKCS12}
-    enabled: ${SSL_ENABLED:true}
+    enabled: ${SSL_ENABLED:false}
 
 spring:
   datasource:

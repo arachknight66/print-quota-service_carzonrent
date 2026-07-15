@@ -5,6 +5,7 @@ import com.printkeep.quota.codec.parser.IppParser;
 import com.printkeep.quota.core.processing.decision.IppDecision;
 import com.printkeep.quota.core.processing.pipeline.PipelineResult;
 import com.printkeep.quota.core.processing.pipeline.PrintProcessingPipeline;
+import com.printkeep.quota.core.processing.service.PrintTransactionService;
 import com.printkeep.quota.core.proxy.client.IppHttpClient;
 import com.printkeep.quota.core.proxy.response.IppResponseGenerator;
 import com.printkeep.quota.core.proxy.routing.PrinterRoutingService;
@@ -38,22 +39,26 @@ public class PrinterProxyService {
     private final PrinterRoutingService routingService;
     private final IppHttpClient ippHttpClient;
     private final IppResponseGenerator responseGenerator;
+    private final PrintTransactionService transactionService;
     private final MeterRegistry registry;
 
     private final Counter requestsProxied;
     private final Counter printerFailures;
     private final Counter rejectedJobs;
+    private final Counter quotaRefunds;
 
     public PrinterProxyService(
             final PrintProcessingPipeline pipeline,
             final PrinterRoutingService routingService,
             final IppHttpClient ippHttpClient,
             final IppResponseGenerator responseGenerator,
+            final PrintTransactionService transactionService,
             final MeterRegistry registry) {
         this.pipeline = pipeline;
         this.routingService = routingService;
         this.ippHttpClient = ippHttpClient;
         this.responseGenerator = responseGenerator;
+        this.transactionService = transactionService;
         this.registry = registry;
 
         this.requestsProxied = Counter.builder("proxy.requests.proxied")
@@ -66,6 +71,10 @@ public class PrinterProxyService {
 
         this.rejectedJobs = Counter.builder("proxy.jobs.rejected")
                 .description("Total print jobs rejected by quota middleware")
+                .register(registry);
+
+        this.quotaRefunds = Counter.builder("quota.refunds.total")
+                .description("Total automatic quota refunds issued after printer forwarding failure")
                 .register(registry);
     }
 
@@ -183,6 +192,15 @@ public class PrinterProxyService {
         } catch (final Exception e) {
             log.error("[CorrID: {}] Error forwarding print stream to printer {}", correlationId, printerUri, e);
             printerFailures.increment();
+
+            // Refund the pages that were deducted during quota reservation, since the job did not reach the printer
+            if (result.context() != null) {
+                transactionService.refundQuota(result.context());
+                quotaRefunds.increment();
+                log.info("[CorrID: {}] Quota refund issued for {} page(s) due to printer forwarding failure",
+                        correlationId, result.estimatedPages());
+            }
+
             final byte[] errBytes = responseGenerator.generateErrorResponse(
                     packet.majorVersion(),
                     packet.minorVersion(),

@@ -83,3 +83,9 @@ app:
       user-search-filter: ${LDAP_USER_SEARCH_FILTER:(sAMAccountName={0})}
       group-search-base: ${LDAP_GROUP_SEARCH_BASE:ou=groups}
       group-search-filter: ${LDAP_GROUP_SEARCH_FILTER:(member={0})}
+  admin:
+    # Comma-separated list of IPv4 CIDR blocks permitted to access /api/v1/admin/**.
+    # PRODUCTION: replace with the actual IT management subnet CIDR, e.g. 10.10.5.0/24.
+    allowed-networks: ${ADMIN_ALLOWED_NETWORKS:127.0.0.0/8,10.0.0.0/8}
+    # Set to false in non-production environments to disable the IP restriction filter.
+    ip-filter-enabled: ${ADMIN_IP_FILTER_ENABLED:true}

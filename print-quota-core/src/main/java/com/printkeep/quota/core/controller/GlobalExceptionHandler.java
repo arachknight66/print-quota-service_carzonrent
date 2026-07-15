@@ -136,6 +136,36 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handles ResponseStatusException to preserve status codes (e.g. 403, 404).
+     *
+     * @param ex      the exception
+     * @param request the servlet request
+     * @return structured error response
+     */
+    @ExceptionHandler(org.springframework.web.server.ResponseStatusException.class)
+    public ResponseEntity<ErrorResponse> handleResponseStatusException(
+            final org.springframework.web.server.ResponseStatusException ex,
+            final HttpServletRequest request
+    ) {
+        final String correlationId = getOrCreateCorrelationId();
+        final HttpStatus status = HttpStatus.resolve(ex.getStatusCode().value());
+        final HttpStatus httpStatus = status != null ? status : HttpStatus.INTERNAL_SERVER_ERROR;
+        
+        LOGGER.warn("[{}] Response status exception at {}: {} - {}",
+                correlationId, request.getRequestURI(), httpStatus.value(), ex.getReason());
+
+        final ErrorResponse errorResponse = new ErrorResponse(
+                Instant.now(),
+                httpStatus.value(),
+                httpStatus.getReasonPhrase(),
+                ex.getReason() != null ? ex.getReason() : httpStatus.getReasonPhrase(),
+                request.getRequestURI(),
+                correlationId
+        );
+        return ResponseEntity.status(httpStatus).body(errorResponse);
+    }
+
+    /**
      * Handles general uncaught exceptions.
      *
      * @param ex      the exception

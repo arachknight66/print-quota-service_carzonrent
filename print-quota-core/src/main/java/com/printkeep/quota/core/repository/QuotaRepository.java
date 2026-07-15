@@ -37,6 +37,10 @@ public interface QuotaRepository extends JpaRepository<Quota, UUID> {
     /**
      * Finds a quota allocation for a user during a specific month, applying a pessimistic write lock.
      * Used to prevent race conditions during concurrent deduction transactions.
+     * 
+     * NOTE: This lock operates at the database level (LockModeType.PESSIMISTIC_WRITE translates
+     * to a SELECT ... FOR UPDATE query on PostgreSQL). It is cluster-safe and prevents concurrent
+     * updates across multiple print-quota-core app/JVM instances sharing the same database.
      *
      * @param userId UUID of the user.
      * @param month  target month (format: YYYY-MM).
@@ -76,4 +80,17 @@ public interface QuotaRepository extends JpaRepository<Quota, UUID> {
 
     @Query("SELECT SUM(q.usedPages) FROM Quota q WHERE q.month = :month")
     Long sumUsedPages(@Param("month") String month);
+
+    /**
+     * Aggregates print quota allocation and usage metrics grouped by user department.
+     * Used for financial chargeback reports.
+     *
+     * @param month target billing month in YYYY-MM format.
+     * @return List of DepartmentChargebackDto rollup statistics.
+     */
+    @Query("SELECT new com.printkeep.quota.core.admin.dto.DepartmentChargebackDto("
+            + "u.department, COUNT(u), SUM(q.allocatedPages), SUM(q.usedPages)) "
+            + "FROM Quota q JOIN q.user u WHERE q.month = :month "
+            + "GROUP BY u.department")
+    java.util.List<com.printkeep.quota.core.admin.dto.DepartmentChargebackDto> getDepartmentChargeback(@Param("month") String month);
 }

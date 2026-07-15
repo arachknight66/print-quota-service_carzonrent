@@ -4,6 +4,8 @@ import com.printkeep.quota.core.processing.decision.IppDecision;
 
 /**
  * Immutable outcome returned by the processing pipeline.
+ * Carries the originating PipelineContext so callers (e.g. PrinterProxyService)
+ * can access user/metadata details after the pipeline has completed.
  */
 public record PipelineResult(
         IppDecision decision,
@@ -13,7 +15,8 @@ public record PipelineResult(
         int copies,
         String username,
         String printerName,
-        long latencyMs
+        long latencyMs,
+        PipelineContext context
 ) {
     public boolean isAllowed() {
         return decision == IppDecision.ALLOW;

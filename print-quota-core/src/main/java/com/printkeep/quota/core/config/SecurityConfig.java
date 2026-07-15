@@ -1,6 +1,7 @@
 package com.printkeep.quota.core.config;
 
 import com.printkeep.quota.core.identity.ldap.config.LdapProperties;
+import com.printkeep.quota.core.security.AdminIpFilter;
 import com.printkeep.quota.core.security.ClientCertAuthFilter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -56,9 +57,26 @@ public class SecurityConfig {
     public FilterRegistrationBean<ClientCertAuthFilter> clientCertAuthFilterRegistration() {
         final FilterRegistrationBean<ClientCertAuthFilter> registration = new FilterRegistrationBean<>();
         registration.setFilter(new ClientCertAuthFilter());
-        registration.addUrlPatterns("/printers/*");
+        registration.addUrlPatterns("/printers/*", "/api/v1/me/*");
         registration.setName("clientCertAuthFilter");
         registration.setOrder(Ordered.HIGHEST_PRECEDENCE);
+        return registration;
+    }
+
+    /**
+     * Registers AdminIpFilter for /api/v1/admin/** paths.
+     * Not gated behind @Profile — runs in all environments (defense in depth).
+     * Bypassed in non-production environments via app.admin.ip-filter-enabled=false.
+     */
+    @Bean
+    public FilterRegistrationBean<AdminIpFilter> adminIpFilterRegistration(
+            @Value("${app.admin.ip-filter-enabled:true}") final boolean filterEnabled,
+            @Value("${app.admin.allowed-networks:127.0.0.0/8,10.0.0.0/8}") final String allowedNetworks) {
+        final FilterRegistrationBean<AdminIpFilter> registration = new FilterRegistrationBean<>();
+        registration.setFilter(new AdminIpFilter(filterEnabled, allowedNetworks));
+        registration.addUrlPatterns("/api/v1/admin/*");
+        registration.setName("adminIpFilter");
+        registration.setOrder(Ordered.HIGHEST_PRECEDENCE + 1);
         return registration;
     }
 

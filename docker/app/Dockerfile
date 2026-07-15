@@ -52,7 +52,7 @@ ENV LOG_PATH="/app/logs"
 
 # Healthcheck checking both Apache and Spring Boot via local curl on Port 80
 HEALTHCHECK --interval=10s --timeout=5s --retries=3 \
-  CMD curl -f http://127.0.0.1/health || exit 1
+  CMD curl -f http://127.0.0.1/actuator/health/readiness || exit 1
 
 # Launch using tini as PID 1
 ENTRYPOINT ["/tini", "--", "/app/entrypoint.sh"]
