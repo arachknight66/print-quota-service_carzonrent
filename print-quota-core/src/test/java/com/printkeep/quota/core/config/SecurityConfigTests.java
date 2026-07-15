@@ -20,7 +20,7 @@ class SecurityConfigTests {
                 securityConfig.clientCertAuthFilterRegistration();
 
         assertThat(registration.getFilter()).isInstanceOf(ClientCertAuthFilter.class);
-        assertThat(registration.getUrlPatterns()).containsExactly("/printers/*");
+        assertThat(registration.getUrlPatterns()).containsExactlyInAnyOrder("/printers/*", "/api/v1/me/*");
         assertThat(registration.getOrder()).isEqualTo(Ordered.HIGHEST_PRECEDENCE);
         assertThat(registration.getFilterName()).isEqualTo("clientCertAuthFilter");
     }

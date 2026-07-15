@@ -1,0 +1,147 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: print-quota-app
+  namespace: print-quota
+  labels:
+    app: print-quota-app
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: print-quota-app
+  template:
+    metadata:
+      labels:
+        app: print-quota-app
+    spec:
+      securityContext:
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        runAsNonRoot: true
+      containers:
+        - name: print-quota-app
+          image: print-quota-core:latest  # Replace with production registry image path
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false  # Required for local temporary directory writes
+            capabilities:
+              drop:
+                - ALL
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              valueFrom:
+                configMapKeyRef:
+                  name: print-quota-config
+                  key: SPRING_PROFILES_ACTIVE
+            - name: SERVER_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: print-quota-config
+                  key: SERVER_PORT
+            - name: SSL_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: print-quota-config
+                  key: SSL_ENABLED
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:postgresql://postgres-service.print-quota.svc.cluster.local:5432/printquota"
+            - name: SPRING_DATASOURCE_USERNAME
+              value: "printuser"
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: print-quota-secrets
+                  key: DB_PASSWORD
+            - name: LDAP_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: print-quota-config
+                  key: LDAP_URL
+            - name: LDAP_SSL_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: print-quota-config
+                  key: LDAP_SSL_ENABLED
+            - name: LDAP_BASE_DN
+              valueFrom:
+                configMapKeyRef:
+                  name: print-quota-config
+                  key: LDAP_BASE_DN
+            - name: LDAP_BIND_DN
+              value: "cn=admin,dc=company,dc=local"
+            - name: LDAP_BIND_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: print-quota-secrets
+                  key: LDAP_BIND_PASSWORD
+            - name: LDAP_SEARCH_BASE
+              valueFrom:
+                configMapKeyRef:
+                  name: print-quota-config
+                  key: LDAP_SEARCH_BASE
+            - name: LDAP_GROUP_SEARCH_BASE
+              valueFrom:
+                configMapKeyRef:
+                  name: print-quota-config
+                  key: LDAP_GROUP_SEARCH_BASE
+            - name: LDAP_SYNC_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: print-quota-config
+                  key: LDAP_SYNC_ENABLED
+            - name: LOG_PATH
+              valueFrom:
+                configMapKeyRef:
+                  name: print-quota-config
+                  key: LOG_PATH
+            - name: APP_QUOTA_COST_PER_PAGE
+              valueFrom:
+                configMapKeyRef:
+                  name: print-quota-config
+                  key: COST_PER_PAGE
+          ports:
+            - containerPort: 8080
+              name: app-port
+          resources:
+            limits:
+              cpu: "1.5"
+              memory: 2Gi
+            requests:
+              cpu: "500m"
+              memory: 1Gi
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8080
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 3
+          volumeMounts:
+            - name: logs-dir
+              mountPath: /app/logs
+            - name: reports-dir
+              mountPath: /app/reports
+            - name: spool-dir
+              mountPath: /app/spool
+      volumes:
+        - name: logs-dir
+          emptyDir: {}
+        - name: reports-dir
+          emptyDir: {}
+        - name: spool-dir
+          emptyDir: {}

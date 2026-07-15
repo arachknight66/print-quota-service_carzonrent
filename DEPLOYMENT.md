@@ -230,6 +230,11 @@ This checklist outlines the mandatory quality gates and validation steps require
 - [ ] **Health Probes Check**: Verify `/actuator/health/readiness` and `/actuator/health/liveness` return `UP` under mock environments.
 - [ ] **Pessimistic Locking Verification**: Verify concurrent test classes pass successfully without deadlock timeouts.
 - [ ] **Admin Authentication**: Confirm endpoints under `/api/v1/admin/` are restricted at network level.
+- [ ] **Admin Network Lockdown**: Verify `app.admin.ip-filter-enabled: true` is set in the production environment, and
+  `app.admin.allowed-networks` is configured with the **actual IT management subnet CIDR** (e.g. `10.10.5.0/24`).
+  The default `127.0.0.0/8,10.0.0.0/8` is intentionally permissive and **must not be used in production**.
+  Environment variable: `ADMIN_ALLOWED_NETWORKS`. Test by attempting to reach `/api/v1/admin/sync` from a general
+  WiFi client — the response must be HTTP 403.
 
 
 ---
@@ -389,6 +394,14 @@ This document provides tier-1 and tier-2 IT support engineers with incident reso
   1. Check user page balance: `GET /api/v1/admin/quotas?username=jdoe`.
   2. If used pages equal allocated pages, user is blocked. Ask manager for authorization and run:
      - `POST /api/v1/admin/quotas/{userId}/adjust` with body `{"adjustment": 50}`.
+
+#### Incident: Same-day termination quota freeze (HR override)
+- **Possible Cause**: HR request to terminate printing access immediately for security/termination clearance reasons, without waiting for the hourly Active Directory synchronization.
+- **Resolution**:
+  1. Retrieve the target user's UUID: `GET /api/v1/admin/users?username=jdoe`.
+  2. Invoke the immediate deactivation API:
+     - `POST /api/v1/admin/users/{userId}/disable-immediate`
+  3. The user's active status is flipped to false instantly in the database, and the next physical print attempt will reject immediately with Layer-7 status `0x0401` (REJECT_DISABLED_USER).
 
 #### Incident: Target printer not printing
 - **Possible Cause**: Physical printer is offline or IP address has changed.

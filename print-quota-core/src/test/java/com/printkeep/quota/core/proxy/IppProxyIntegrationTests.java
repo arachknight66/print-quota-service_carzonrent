@@ -74,7 +74,7 @@ class IppProxyIntegrationTests extends AbstractIntegrationTest {
 
         // Pipeline ALLOW decision mock
         final PipelineResult pipelineResult = new PipelineResult(
-                IppDecision.ALLOW, "Success", "corr-999", 5, 1, "jdoe", "LaserJet_5", 5
+                IppDecision.ALLOW, "Success", "corr-999", 5, 1, "jdoe", "LaserJet_5", 5, null
         );
         when(pipeline.process(any(IppPacket.class), anyString(), anyString(), any())).thenReturn(pipelineResult);
 
@@ -111,7 +111,7 @@ class IppProxyIntegrationTests extends AbstractIntegrationTest {
 
         // Pipeline REJECT decision mock
         final PipelineResult pipelineResult = new PipelineResult(
-                IppDecision.REJECT_INSUFFICIENT_QUOTA, "Insufficient balance", "corr-888", 5, 1, "jdoe", "LaserJet_5", 5
+                IppDecision.REJECT_INSUFFICIENT_QUOTA, "Insufficient balance", "corr-888", 5, 1, "jdoe", "LaserJet_5", 5, null
         );
         when(pipeline.process(any(IppPacket.class), anyString(), anyString(), any())).thenReturn(pipelineResult);
 
@@ -131,6 +131,50 @@ class IppProxyIntegrationTests extends AbstractIntegrationTest {
 
         assertThat(errorPacket.operationOrStatus()).isEqualTo((short) 0x0401); // client-error-not-authorized
         assertThat(errorPacket.transactionId()).isEqualTo(445);
+        verify(ippHttpClient, never()).sendStream(anyString(), any(InputStream.class));
+    }
+
+    @Test
+    void testProxyControllerRejectsMismatchedClientCnVsRequestingUser() throws Exception {
+        // Build IPP request where requesting-user-name is "jdoe" but the verified cert CN is "mallory"
+        final IppAttribute reqUser = new IppAttribute("requesting-user-name", IppTag.NAME_WITHOUT_LANGUAGE, List.of("jdoe"));
+        final IppAttribute printerUri = new IppAttribute("printer-uri", IppTag.URI, List.of("ipp://localhost/printers/LaserJet_5"));
+        final IppAttributeGroup opGroup = new IppAttributeGroup(IppTag.OPERATION_ATTRIBUTES, List.of(reqUser, printerUri));
+        final IppPacket requestPacket = new IppPacket((byte) 2, (byte) 0, (short) 0x0002, 777, List.of(opGroup), new byte[0]);
+
+        final ByteArrayOutputStream out = new ByteArrayOutputStream();
+        IppEncoder.encode(requestPacket, out);
+        final byte[] rawIppBytes = out.toByteArray();
+
+        // Pipeline returns REJECT_UNKNOWN_USER — this is what IdentityResolutionStage produces
+        // when verifiedClientCN ("mallory") does not case-insensitively match requesting-user-name ("jdoe").
+        final PipelineResult pipelineResult = new PipelineResult(
+                IppDecision.REJECT_UNKNOWN_USER,
+                "Client certificate identity does not match requesting-user-name",
+                "corr-mtls-777",
+                0, 1, "jdoe", "LaserJet_5", 1, null
+        );
+        when(pipeline.process(any(IppPacket.class), anyString(), anyString(), any())).thenReturn(pipelineResult);
+
+        final HttpHeaders headers = new HttpHeaders();
+        headers.set("Content-Type", "application/ipp");
+        final HttpEntity<byte[]> requestEntity = new HttpEntity<>(rawIppBytes, headers);
+
+        final ResponseEntity<byte[]> response = restTemplate.postForEntity(
+                "/printers/LaserJet_5", requestEntity, byte[].class
+        );
+
+        // Controller always returns HTTP 200 with a binary IPP response body (IPP protocol over HTTP)
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        // Decode the binary IPP error response — must carry 0x0401 (client-error-not-authorized)
+        final ByteArrayInputStream in = new ByteArrayInputStream(response.getBody());
+        final IppPacket errorPacket = IppParser.parse(in);
+
+        assertThat(errorPacket.operationOrStatus()).isEqualTo((short) 0x0401); // client-error-not-authorized
+        assertThat(errorPacket.transactionId()).isEqualTo(777);
+
+        // The forwarding client must never be reached when the decision is REJECT
         verify(ippHttpClient, never()).sendStream(anyString(), any(InputStream.class));
     }
 }

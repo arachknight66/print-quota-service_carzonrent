@@ -1,13 +1,10 @@
 package com.printkeep.quota.core.identity.ldap.scheduler;
 
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import com.printkeep.quota.core.identity.ldap.config.LdapProperties;
 import com.printkeep.quota.core.identity.ldap.service.IdentitySynchronizationService;
+import java.sql.Connection;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,6 +23,12 @@ class IdentitySyncSchedulerTests {
     @Mock
     private LdapProperties ldapProperties;
 
+    @Mock
+    private SyncLeaderLock syncLeaderLock;
+
+    @Mock
+    private Connection mockConnection;
+
     private IdentitySyncScheduler scheduler;
     private LdapProperties.Sync syncConfig;
 
@@ -33,14 +36,31 @@ class IdentitySyncSchedulerTests {
     void setUp() {
         syncConfig = new LdapProperties.Sync();
         lenient().when(ldapProperties.getSync()).thenReturn(syncConfig);
-        scheduler = new IdentitySyncScheduler(syncService, ldapProperties);
+        scheduler = new IdentitySyncScheduler(syncService, ldapProperties, syncLeaderLock);
     }
 
     @Test
-    void testScheduledSyncWhenEnabled() {
+    void testScheduledSyncWhenEnabledAndLockAcquired() {
         syncConfig.setEnabled(true);
+        when(syncLeaderLock.acquireLock()).thenReturn(mockConnection);
+
         scheduler.scheduledSync();
+
         verify(syncService, times(1)).synchronizeIdentities();
+        verify(syncLeaderLock, times(1)).acquireLock();
+        verify(syncLeaderLock, times(1)).releaseLock(mockConnection);
+    }
+
+    @Test
+    void testScheduledSyncWhenEnabledAndLockNotAcquired() {
+        syncConfig.setEnabled(true);
+        when(syncLeaderLock.acquireLock()).thenReturn(null);
+
+        scheduler.scheduledSync();
+
+        verify(syncService, never()).synchronizeIdentities();
+        verify(syncLeaderLock, times(1)).acquireLock();
+        verify(syncLeaderLock, never()).releaseLock(any());
     }
 
     @Test
@@ -48,6 +68,7 @@ class IdentitySyncSchedulerTests {
         syncConfig.setEnabled(false);
         scheduler.scheduledSync();
         verify(syncService, never()).synchronizeIdentities();
+        verify(syncLeaderLock, never()).acquireLock();
     }
 
     @Test

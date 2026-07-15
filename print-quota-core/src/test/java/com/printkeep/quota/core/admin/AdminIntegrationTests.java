@@ -59,6 +59,12 @@ class AdminIntegrationTests extends AbstractIntegrationTest {
     @Autowired
     private ExcelExportService exportService;
 
+    @Autowired
+    private com.printkeep.quota.core.processing.pipeline.PrintProcessingPipeline pipeline;
+
+    @Autowired
+    private com.printkeep.quota.core.repository.QuotaAdjustmentLogRepository adjustmentLogRepository;
+
     private TransactionTemplate transactionTemplate;
     private User savedUser;
 
@@ -120,13 +126,64 @@ class AdminIntegrationTests extends AbstractIntegrationTest {
 
     @Test
     void testAdjustQuotaEndpoint() {
+        final com.printkeep.quota.core.admin.dto.QuotaAdjustmentRequest request =
+                new com.printkeep.quota.core.admin.dto.QuotaAdjustmentRequest(50, "Manager approved override", "admin-mgr");
+
         final ResponseEntity<Quota> response = restTemplate.postForEntity(
                 "/api/v1/admin/quotas/" + savedUser.getId() + "/adjust",
-                Map.of("adjustment", 50),
+                request,
                 Quota.class
         );
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody().getAllocatedPages()).isEqualTo(250);
+
+        // Verify the QuotaAdjustmentLog entry was persisted
+        final List<com.printkeep.quota.core.model.QuotaAdjustmentLog> logs = adjustmentLogRepository.findAll();
+        assertThat(logs).hasSize(1);
+        assertThat(logs.get(0).getAdjustmentAmount()).isEqualTo(50);
+        assertThat(logs.get(0).getReason()).isEqualTo("Manager approved override");
+        assertThat(logs.get(0).getApprovedBy()).isEqualTo("admin-mgr");
+    }
+
+    @Test
+    void testDisableUserImmediateEndpointAndPrintRejection() {
+        // 1. Double check the user is initially active
+        assertThat(savedUser.isActive()).isTrue();
+
+        // 2. Call disable-immediate endpoint
+        final ResponseEntity<String> response = restTemplate.postForEntity(
+                "/api/v1/admin/users/" + savedUser.getId() + "/disable-immediate",
+                null,
+                String.class
+        );
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).contains("SUCCESS");
+
+        // 3. Reload from repository to assert state change is immediate
+        final User updatedUser = userRepository.findById(savedUser.getId()).orElseThrow();
+        assertThat(updatedUser.isActive()).isFalse();
+
+        // 4. Verify that subsequent print evaluation is blocked by the pipeline
+        // Construct a mock IPP packet containing the username in operation attributes
+        final com.printkeep.quota.codec.model.IppAttribute usernameAttr =
+                new com.printkeep.quota.codec.model.IppAttribute(
+                        "requesting-user-name",
+                        com.printkeep.quota.codec.model.IppTag.NAME_WITHOUT_LANGUAGE,
+                        List.of("company\\adminuser")
+                );
+        final com.printkeep.quota.codec.model.IppAttributeGroup opGroup =
+                new com.printkeep.quota.codec.model.IppAttributeGroup(
+                        com.printkeep.quota.codec.model.IppTag.OPERATION_ATTRIBUTES,
+                        List.of(usernameAttr)
+                );
+        final com.printkeep.quota.codec.model.IppPacket packet =
+                new com.printkeep.quota.codec.model.IppPacket((byte) 2, (byte) 0, (short) 0x0002, 1, List.of(opGroup), new byte[0]);
+
+        final com.printkeep.quota.core.processing.pipeline.PipelineResult result =
+                pipeline.process(packet, "corr-disable-test", "127.0.0.1", "company\\adminuser");
+
+        assertThat(result.isAllowed()).isFalse();
+        assertThat(result.decision()).isEqualTo(com.printkeep.quota.core.processing.decision.IppDecision.REJECT_DISABLED_USER);
     }
 
     @Test

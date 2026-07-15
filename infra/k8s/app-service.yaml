@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: print-quota-service
+  namespace: print-quota
+  labels:
+    app: print-quota-app
+spec:
+  type: LoadBalancer
+  # Critical configuration: Preserves the client source IP and forces
+  # routing directly to the container node where the pod resides.
+  # This guarantees client SSL certificate validation at the pod level is clean (BR-1).
+  externalTrafficPolicy: Local
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP
+      name: ipp-and-http
+  selector:
+    app: print-quota-app
