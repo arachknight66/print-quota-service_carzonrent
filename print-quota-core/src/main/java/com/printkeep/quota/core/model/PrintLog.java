@@ -41,7 +41,18 @@ public class PrintLog {
     @NotNull(message = "User must not be null")
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private User user;
+
+    @com.fasterxml.jackson.annotation.JsonProperty("domainUsername")
+    public String getDomainUsername() {
+        if (user == null) return null;
+        try {
+            return user.getDomainUsername();
+        } catch (org.hibernate.LazyInitializationException e) {
+            return null;
+        }
+    }
 
     @NotNull(message = "Timestamp must not be null")
     @Column(name = "timestamp", nullable = false)

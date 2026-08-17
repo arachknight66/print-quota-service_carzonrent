@@ -17,7 +17,7 @@ import com.printkeep.quota.core.AbstractIntegrationTest;
 class WebServerConfigTests extends AbstractIntegrationTest {
 
     @Autowired
-    @org.springframework.beans.factory.annotation.Qualifier("jettyWebServerFactoryCustomizer")
+    @org.springframework.beans.factory.annotation.Qualifier("customJettyWebServerFactoryCustomizer")
     private WebServerFactoryCustomizer<JettyServletWebServerFactory> customizer;
 
     /**

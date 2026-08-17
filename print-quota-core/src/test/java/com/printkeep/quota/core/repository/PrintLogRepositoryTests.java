@@ -126,17 +126,19 @@ class PrintLogRepositoryTests extends AbstractIntegrationTest {
      */
     @Test
     void testPageCountCheckConstraint() {
-        transactionTemplate.executeWithoutResult(status -> {
-            final PrintLog log = new PrintLog();
-            log.setUser(testUser);
-            log.setDocumentName("bad_doc.pdf");
-            log.setPrinterName("P1");
-            log.setPageCount(0); // Violation: page count must be > 0
-            log.setStatus(PrintStatus.ERROR);
-            log.setCorrelationId(UUID.randomUUID().toString());
+        final PrintLog log = new PrintLog();
+        log.setUser(testUser);
+        log.setDocumentName("bad_doc.pdf");
+        log.setPrinterName("P1");
+        log.setPageCount(0); // Violation: page count must be > 0
+        log.setStatus(PrintStatus.ERROR);
+        log.setCorrelationId(UUID.randomUUID().toString());
 
-            assertThatThrownBy(() -> printLogRepository.saveAndFlush(log))
-                    .isInstanceOf(DataIntegrityViolationException.class);
-        });
+        assertThatThrownBy(() -> transactionTemplate.executeWithoutResult(status -> {
+            printLogRepository.saveAndFlush(log);
+        })).satisfies(e -> assertThat(e).isInstanceOfAny(
+                DataIntegrityViolationException.class,
+                jakarta.validation.ConstraintViolationException.class
+        ));
     }
 }

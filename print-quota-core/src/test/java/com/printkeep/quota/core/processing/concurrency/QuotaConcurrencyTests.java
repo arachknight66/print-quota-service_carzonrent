@@ -48,6 +48,9 @@ class QuotaConcurrencyTests extends AbstractIntegrationTest {
     private QuotaRepository quotaRepository;
 
     @Autowired
+    private com.printkeep.quota.core.repository.QuotaAdjustmentLogRepository adjustmentLogRepository;
+
+    @Autowired
     private PrintLogRepository printLogRepository;
 
     @Autowired
@@ -61,6 +64,7 @@ class QuotaConcurrencyTests extends AbstractIntegrationTest {
         this.transactionTemplate = new TransactionTemplate(transactionManager);
         this.testUser = transactionTemplate.execute(status -> {
             printLogRepository.deleteAll();
+            adjustmentLogRepository.deleteAll();
             quotaRepository.deleteAll();
             userRepository.deleteAll();
 

@@ -9,6 +9,7 @@ import org.springframework.ldap.control.PagedResultsDirContextProcessor;
 import org.springframework.ldap.core.AttributesMapper;
 import org.springframework.ldap.core.ContextSource;
 import org.springframework.ldap.core.LdapTemplate;
+import org.springframework.ldap.core.support.LdapContextSource;
 import org.springframework.ldap.core.support.SingleContextSource;
 import org.springframework.ldap.query.LdapQueryBuilder;
 import org.springframework.ldap.support.LdapUtils;
@@ -29,15 +30,15 @@ import java.util.Optional;
 public class LdapUserRepository {
 
     private final LdapTemplate ldapTemplate;
-    private final ContextSource contextSource;
+    private final LdapContextSource ldapContextSource;
     private final LdapProperties properties;
 
     public LdapUserRepository(
             final LdapTemplate ldapTemplate,
-            @Qualifier("contextSource") final ContextSource contextSource,
+            @Qualifier("ldapContextSource") final LdapContextSource ldapContextSource,
             final LdapProperties properties) {
         this.ldapTemplate = ldapTemplate;
-        this.contextSource = contextSource;
+        this.ldapContextSource = ldapContextSource;
         this.properties = properties;
     }
 
@@ -48,7 +49,7 @@ public class LdapUserRepository {
      * @param username Active Directory unique login name.
      * @return an Optional containing the LdapUserDto if found, otherwise empty.
      */
-    @Cacheable(value = "ldapUsers", key = "#username")
+    @Cacheable(value = "ldapUsers", key = "#p0")
     public Optional<LdapUserDto> findByUsername(final String username) {
         try {
             final List<LdapUserDto> users = ldapTemplate.search(
@@ -72,7 +73,7 @@ public class LdapUserRepository {
      */
     public List<LdapUserDto> findAllUsers() {
         try {
-            return SingleContextSource.doWithSingleContext(contextSource, operations -> {
+            return SingleContextSource.doWithSingleContext(ldapContextSource, operations -> {
                 final List<LdapUserDto> allUsers = new java.util.ArrayList<>();
                 final PagedResultsDirContextProcessor processor = new PagedResultsDirContextProcessor(1000);
 

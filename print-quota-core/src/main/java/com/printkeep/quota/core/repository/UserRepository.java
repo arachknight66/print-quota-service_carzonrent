@@ -36,8 +36,8 @@ public interface UserRepository extends JpaRepository<User, UUID> {
      * Search users by dynamic filtering with pagination.
      */
     @org.springframework.data.jpa.repository.Query("SELECT u FROM User u WHERE "
-            + "(:username IS NULL OR LOWER(u.domainUsername) LIKE LOWER(CONCAT('%', :username, '%'))) AND "
-            + "(:department IS NULL OR LOWER(u.department) LIKE LOWER(CONCAT('%', :department, '%')))")
+            + "(CAST(:username AS string) IS NULL OR LOWER(u.domainUsername) LIKE LOWER(CONCAT('%', CAST(:username AS string), '%'))) AND "
+            + "(CAST(:department AS string) IS NULL OR LOWER(u.department) LIKE LOWER(CONCAT('%', CAST(:department AS string), '%')))")
     org.springframework.data.domain.Page<User> searchUsers(
             @org.springframework.data.repository.query.Param("username") String username,
             @org.springframework.data.repository.query.Param("department") String department,

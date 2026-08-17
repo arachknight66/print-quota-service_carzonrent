@@ -47,6 +47,9 @@ class MultiInstanceQuotaConcurrencyTests extends AbstractIntegrationTest {
     private QuotaRepository quotaRepository;
 
     @Autowired
+    private com.printkeep.quota.core.repository.QuotaAdjustmentLogRepository adjustmentLogRepository;
+
+    @Autowired
     private PrintLogRepository printLogRepository;
 
     @Autowired
@@ -71,6 +74,7 @@ class MultiInstanceQuotaConcurrencyTests extends AbstractIntegrationTest {
 
         this.testUser = transactionTemplate.execute(status -> {
             printLogRepository.deleteAll();
+            adjustmentLogRepository.deleteAll();
             quotaRepository.deleteAll();
             userRepository.deleteAll();
 
@@ -111,11 +115,25 @@ class MultiInstanceQuotaConcurrencyTests extends AbstractIntegrationTest {
                 context.setUser(testUser);
                 context.setMetadata(metadata);
 
-                try {
-                    serviceInstance.reserveQuota(context);
+                 try {
+                    transactionTemplate.execute(status -> {
+                        try {
+                            serviceInstance.reserveQuota(context);
+                        } catch (final Exception e) {
+                            throw new RuntimeException(e);
+                        }
+                        return null;
+                    });
                     return true;
-                } catch (final QuotaExceededException e) {
-                    return false;
+                } catch (final Exception e) {
+                    Throwable cause = e;
+                    while (cause != null) {
+                        if (cause instanceof QuotaExceededException) {
+                            return false;
+                        }
+                        cause = cause.getCause();
+                    }
+                    throw e;
                 }
             });
         }

@@ -46,5 +46,6 @@ public abstract class AbstractIntegrationTest {
             registry.add("spring.datasource.password", POSTGRES::getPassword);
         }
         registry.add("spring.jpa.hibernate.ddl-auto", () -> "validate");
+        registry.add("spring.datasource.hikari.maximum-pool-size", () -> "30");
     }
 }

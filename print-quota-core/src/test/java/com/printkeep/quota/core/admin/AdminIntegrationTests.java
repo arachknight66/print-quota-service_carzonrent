@@ -60,6 +60,9 @@ class AdminIntegrationTests extends AbstractIntegrationTest {
     private ExcelExportService exportService;
 
     @Autowired
+    private jakarta.persistence.EntityManager entityManager;
+
+    @Autowired
     private com.printkeep.quota.core.processing.pipeline.PrintProcessingPipeline pipeline;
 
     @Autowired
@@ -72,9 +75,10 @@ class AdminIntegrationTests extends AbstractIntegrationTest {
     void setUp() {
         this.transactionTemplate = new TransactionTemplate(transactionManager);
         this.savedUser = transactionTemplate.execute(status -> {
-            printLogRepository.deleteAll();
-            quotaRepository.deleteAll();
-            userRepository.deleteAll();
+            entityManager.createNativeQuery("DELETE FROM print_logs").executeUpdate();
+            entityManager.createNativeQuery("DELETE FROM quota_adjustment_logs").executeUpdate();
+            entityManager.createNativeQuery("DELETE FROM quotas").executeUpdate();
+            entityManager.createNativeQuery("DELETE FROM users").executeUpdate();
 
             final User user = new User();
             user.setDomainUsername("company\\adminuser");
@@ -164,17 +168,22 @@ class AdminIntegrationTests extends AbstractIntegrationTest {
         assertThat(updatedUser.isActive()).isFalse();
 
         // 4. Verify that subsequent print evaluation is blocked by the pipeline
-        // Construct a mock IPP packet containing the username in operation attributes
         final com.printkeep.quota.codec.model.IppAttribute usernameAttr =
                 new com.printkeep.quota.codec.model.IppAttribute(
                         "requesting-user-name",
                         com.printkeep.quota.codec.model.IppTag.NAME_WITHOUT_LANGUAGE,
                         List.of("company\\adminuser")
                 );
+        final com.printkeep.quota.codec.model.IppAttribute printerUriAttr =
+                new com.printkeep.quota.codec.model.IppAttribute(
+                        "printer-uri",
+                        com.printkeep.quota.codec.model.IppTag.URI,
+                        List.of("ipp://localhost/printers/Finance_Dept")
+                );
         final com.printkeep.quota.codec.model.IppAttributeGroup opGroup =
                 new com.printkeep.quota.codec.model.IppAttributeGroup(
                         com.printkeep.quota.codec.model.IppTag.OPERATION_ATTRIBUTES,
-                        List.of(usernameAttr)
+                        List.of(usernameAttr, printerUriAttr)
                 );
         final com.printkeep.quota.codec.model.IppPacket packet =
                 new com.printkeep.quota.codec.model.IppPacket((byte) 2, (byte) 0, (short) 0x0002, 1, List.of(opGroup), new byte[0]);
@@ -187,6 +196,7 @@ class AdminIntegrationTests extends AbstractIntegrationTest {
     }
 
     @Test
+    @org.springframework.transaction.annotation.Transactional
     void testExcelExportGeneration() throws Exception {
         final List<PrintLog> logs = printLogRepository.findAll();
         try (final ByteArrayOutputStream out = new ByteArrayOutputStream()) {
