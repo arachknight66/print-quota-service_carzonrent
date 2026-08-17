@@ -58,23 +58,23 @@ public class AdminController {
 
     @GetMapping("/users")
     public Page<User> searchUsers(
-            @RequestParam(required = false) final String username,
-            @RequestParam(required = false) final String department,
+            @RequestParam(name = "username", required = false) final String username,
+            @RequestParam(name = "department", required = false) final String department,
             @PageableDefault(size = 20) final Pageable pageable) {
         return userRepository.searchUsers(username, department, pageable);
     }
 
     @GetMapping("/quotas")
     public Page<Quota> searchQuotas(
-            @RequestParam(required = false) final String username,
-            @RequestParam(required = false) final String month,
+            @RequestParam(name = "username", required = false) final String username,
+            @RequestParam(name = "month", required = false) final String month,
             @PageableDefault(size = 20) final Pageable pageable) {
         return quotaRepository.searchQuotas(username, month, pageable);
     }
 
     @PostMapping("/quotas/{userId}/adjust")
     public ResponseEntity<?> adjustQuota(
-            @PathVariable final UUID userId,
+            @PathVariable(name = "userId") final UUID userId,
             @jakarta.validation.Valid @RequestBody final com.printkeep.quota.core.admin.dto.QuotaAdjustmentRequest request) {
         try {
             final Quota updated = adminQuotaService.adjustUserQuota(userId, request);
@@ -104,14 +104,14 @@ public class AdminController {
 
     @GetMapping("/history")
     public Page<PrintLog> searchHistory(
-            @RequestParam(required = false) final String username,
-            @RequestParam(required = false) final String department,
-            @RequestParam(required = false) final String printer,
-            @RequestParam(required = false) final PrintStatus status,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) final Instant start,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) final Instant end,
-            @RequestParam(required = false) final String documentName,
-            @RequestParam(required = false) final String correlationId,
+            @RequestParam(name = "username", required = false) final String username,
+            @RequestParam(name = "department", required = false) final String department,
+            @RequestParam(name = "printer", required = false) final String printer,
+            @RequestParam(name = "status", required = false) final PrintStatus status,
+            @RequestParam(name = "start", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) final Instant start,
+            @RequestParam(name = "end", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) final Instant end,
+            @RequestParam(name = "documentName", required = false) final String documentName,
+            @RequestParam(name = "correlationId", required = false) final String correlationId,
             @PageableDefault(size = 20) final Pageable pageable) {
         return printLogRepository.searchPrintLogs(
                 username, department, printer, status, start, end, documentName, correlationId, pageable
@@ -133,7 +133,7 @@ public class AdminController {
      */
     @PostMapping("/users/{userId}/disable-immediate")
     @org.springframework.transaction.annotation.Transactional(rollbackFor = Exception.class)
-    public ResponseEntity<?> disableUserImmediate(@PathVariable final UUID userId) {
+    public ResponseEntity<?> disableUserImmediate(@PathVariable(name = "userId") final UUID userId) {
         final Optional<User> userOpt = userRepository.findById(userId);
         if (userOpt.isEmpty()) {
             return ResponseEntity.status(404).body(Map.of("error", "User not found"));

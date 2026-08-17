@@ -54,8 +54,8 @@ public interface QuotaRepository extends JpaRepository<Quota, UUID> {
      * Search quotas by dynamic filtering with pagination.
      */
     @Query("SELECT q FROM Quota q WHERE "
-            + "(:username IS NULL OR LOWER(q.user.domainUsername) LIKE LOWER(CONCAT('%', :username, '%'))) AND "
-            + "(:month IS NULL OR q.month = :month)")
+            + "(CAST(:username AS string) IS NULL OR LOWER(q.user.domainUsername) LIKE LOWER(CONCAT('%', CAST(:username AS string), '%'))) AND "
+            + "(CAST(:month AS string) IS NULL OR q.month = CAST(:month AS string))")
     org.springframework.data.domain.Page<Quota> searchQuotas(
             @Param("username") String username,
             @Param("month") String month,

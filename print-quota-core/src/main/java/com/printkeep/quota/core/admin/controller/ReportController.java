@@ -43,7 +43,7 @@ public class ReportController {
     @GetMapping("/export/logs")
     @Transactional(readOnly = true)
     public void exportLogs(
-            @RequestParam(defaultValue = "excel") final String format,
+            @RequestParam(name = "format", defaultValue = "excel") final String format,
             final HttpServletResponse response) throws IOException {
 
         try (Stream<PrintLog> logs = printLogRepository.streamAllForExport()) {
@@ -62,8 +62,8 @@ public class ReportController {
     @GetMapping("/export/quotas")
     @Transactional(readOnly = true)
     public void exportQuotas(
-            @RequestParam(defaultValue = "excel") final String format,
-            @RequestParam(required = false) final String month,
+            @RequestParam(name = "format", defaultValue = "excel") final String format,
+            @RequestParam(name = "month", required = false) final String month,
             final HttpServletResponse response) throws IOException {
 
         try (Stream<Quota> quotas = month != null
@@ -83,7 +83,7 @@ public class ReportController {
 
     @GetMapping("/chargeback")
     public void exportChargeback(
-            @RequestParam final String month,
+            @RequestParam(name = "month") final String month,
             final HttpServletResponse response) throws IOException {
 
         response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");

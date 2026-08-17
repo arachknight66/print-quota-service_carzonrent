@@ -77,15 +77,16 @@ class QuotaRepositoryTests extends AbstractIntegrationTest {
             quota1.setMonth("2026-07");
             quota1.setAllocatedPages(100);
             quotaRepository.saveAndFlush(quota1);
-
-            final Quota quota2 = new Quota();
-            quota2.setUser(testUser);
-            quota2.setMonth("2026-07");
-            quota2.setAllocatedPages(150);
-
-            assertThatThrownBy(() -> quotaRepository.saveAndFlush(quota2))
-                    .isInstanceOf(DataIntegrityViolationException.class);
         });
+
+        final Quota quota2 = new Quota();
+        quota2.setUser(testUser);
+        quota2.setMonth("2026-07");
+        quota2.setAllocatedPages(150);
+
+        assertThatThrownBy(() -> transactionTemplate.executeWithoutResult(status -> {
+            quotaRepository.saveAndFlush(quota2);
+        })).isInstanceOf(DataIntegrityViolationException.class);
     }
 
     /**
@@ -93,16 +94,15 @@ class QuotaRepositoryTests extends AbstractIntegrationTest {
      */
     @Test
     void testDatabaseCheckConstraints() {
-        transactionTemplate.executeWithoutResult(status -> {
-            final Quota quota = new Quota();
-            quota.setUser(testUser);
-            quota.setMonth("2026-07");
-            quota.setAllocatedPages(50);
-            quota.setUsedPages(60); // Exceeds allocated
+        final Quota quota = new Quota();
+        quota.setUser(testUser);
+        quota.setMonth("2026-07");
+        quota.setAllocatedPages(50);
+        quota.setUsedPages(60); // Exceeds allocated
 
-            assertThatThrownBy(() -> quotaRepository.saveAndFlush(quota))
-                    .isInstanceOf(DataIntegrityViolationException.class);
-        });
+        assertThatThrownBy(() -> transactionTemplate.executeWithoutResult(status -> {
+            quotaRepository.saveAndFlush(quota);
+        })).isInstanceOf(DataIntegrityViolationException.class);
     }
 
     /**

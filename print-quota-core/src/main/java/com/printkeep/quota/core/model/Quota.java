@@ -45,7 +45,18 @@ public class Quota {
     @NotNull(message = "User must not be null")
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private User user;
+
+    @com.fasterxml.jackson.annotation.JsonProperty("domainUsername")
+    public String getDomainUsername() {
+        if (user == null) return null;
+        try {
+            return user.getDomainUsername();
+        } catch (org.hibernate.LazyInitializationException e) {
+            return null;
+        }
+    }
 
     @NotNull(message = "Month must not be null")
     @Pattern(regexp = "^\\d{4}-\\d{2}$", message = "Month must be in YYYY-MM format")

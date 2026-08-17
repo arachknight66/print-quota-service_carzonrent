@@ -99,7 +99,7 @@ public class IppHttpClient {
                     throw new IOException("Target printer returned server error code: " + response.statusCode());
                 }
                 return response.body();
-            } catch (final ConnectException | SocketTimeoutException e) {
+            } catch (final ConnectException | SocketTimeoutException | java.net.http.HttpTimeoutException e) {
                 log.warn("Temporary network disconnect to printer {} on attempt {}/{}", printerUri, attempts, maxRetries, e);
                 if (attempts >= maxRetries) {
                     throw e;
@@ -108,13 +108,18 @@ public class IppHttpClient {
             } catch (final IOException e) {
                 // Determine if this is a connection reset or network error we want to retry
                 final String msg = e.getMessage() != null ? e.getMessage().toLowerCase(Locale.ROOT) : "";
-                if (msg.contains("connection reset") || msg.contains("broken pipe")) {
-                    log.warn("Connection reset by printer {} on attempt {}/{}", printerUri, attempts, maxRetries, e);
+                if (msg.contains("connection reset") || msg.contains("broken pipe")
+                        || msg.contains("connection closed") || msg.contains("closed before")
+                        || msg.contains("closed request") || msg.contains("closed session")
+                        || msg.contains("billing/ipp request closed")
+                        || msg.contains("header parser") || msg.contains("received no bytes")) {
+                    log.warn("Connection closed or reset by printer {} on attempt {}/{}", printerUri, attempts, maxRetries, e);
                     if (attempts >= maxRetries) {
                         throw e;
                     }
                     Thread.sleep(delay);
                 } else {
+                    log.error("RETRIES FALLTHROUGH: class={}, msg={}", e.getClass().getName(), e.getMessage());
                     throw e;
                 }
             }

@@ -55,14 +55,14 @@ public interface PrintLogRepository extends JpaRepository<PrintLog, UUID> {
      * Advanced audit search supporting dynamic parameters with pagination.
      */
     @org.springframework.data.jpa.repository.Query("SELECT pl FROM PrintLog pl WHERE "
-            + "(:username IS NULL OR LOWER(pl.user.domainUsername) LIKE LOWER(CONCAT('%', :username, '%'))) AND "
-            + "(:department IS NULL OR LOWER(pl.user.department) LIKE LOWER(CONCAT('%', :department, '%'))) AND "
-            + "(:printerName IS NULL OR LOWER(pl.printerName) LIKE LOWER(CONCAT('%', :printerName, '%'))) AND "
+            + "(CAST(:username AS string) IS NULL OR LOWER(pl.user.domainUsername) LIKE LOWER(CONCAT('%', CAST(:username AS string), '%'))) AND "
+            + "(CAST(:department AS string) IS NULL OR LOWER(pl.user.department) LIKE LOWER(CONCAT('%', CAST(:department AS string), '%'))) AND "
+            + "(CAST(:printerName AS string) IS NULL OR LOWER(pl.printerName) LIKE LOWER(CONCAT('%', CAST(:printerName AS string), '%'))) AND "
             + "(:status IS NULL OR pl.status = :status) AND "
             + "(:startDate IS NULL OR pl.timestamp >= :startDate) AND "
             + "(:endDate IS NULL OR pl.timestamp <= :endDate) AND "
-            + "(:documentName IS NULL OR LOWER(pl.documentName) LIKE LOWER(CONCAT('%', :documentName, '%'))) AND "
-            + "(:correlationId IS NULL OR pl.correlationId = :correlationId)")
+            + "(CAST(:documentName AS string) IS NULL OR LOWER(pl.documentName) LIKE LOWER(CONCAT('%', CAST(:documentName AS string), '%'))) AND "
+            + "(CAST(:correlationId AS string) IS NULL OR pl.correlationId = CAST(:correlationId AS string))")
     org.springframework.data.domain.Page<PrintLog> searchPrintLogs(
             @org.springframework.data.repository.query.Param("username") String username,
             @org.springframework.data.repository.query.Param("department") String department,
