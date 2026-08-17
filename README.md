@@ -100,8 +100,9 @@ docker compose up print-quota-app -d
 
 Detailed project specifications, architectural details, local development setup guidelines, operational workflows, and the project changelog are organized into the following primary documents:
 
-1. [ARCHITECTURE.md](ARCHITECTURE.md) — System requirements, software requirements specifications, architecture blueprints, system design patterns, database designs, API specifications, and IPP proxy architecture, including the history of Architecture Decision Records (ADRs).
-2. [SETUP.md](SETUP.md) — Prerequisites, local environment setup details, local testing guidelines, user & administration workflows, and local QA environment guides.
-3. [DEPLOYMENT.md](DEPLOYMENT.md) — Production deployment guidelines, container hardening, CI/CD Jenkins setup, release checklists, operational runbooks, backups, and incident response playbooks.
-4. [CHANGELOG.md](CHANGELOG.md) — Release notes, milestones, historical implementation roadmaps, and the future project roadmap.
+1. [SRS.md](SRS.md) — Software Requirements Specification (SRS) defining functional and non-functional requirements, use cases, business rules, and external interfaces.
+2. [ARCHITECTURE.md](ARCHITECTURE.md) — System architecture blueprints, component designs, database schema models, request sequence flows, API designs, and print processing engine details.
+3. [SETUP.md](SETUP.md) — Prerequisites, local environment setup details, local testing guidelines, user & administration workflows, and local QA environment guides.
+4. [DEPLOYMENT.md](DEPLOYMENT.md) — Production deployment guidelines, container hardening, CI/CD Jenkins setup, release checklists, operational runbooks, backups, and incident response playbooks.
+5. [CHANGELOG.md](CHANGELOG.md) — Release notes, milestones, historical implementation roadmaps, and the future project roadmap.
 
